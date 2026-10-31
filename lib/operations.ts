@@ -106,6 +106,45 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       );
     }
     entity = p.id;
+  } else if (action === "receipt") {
+    const p = z
+      .object({
+        ...base,
+        productId: id,
+        quantity: quantitySchema,
+        supplier: detail,
+        orderCost: moneySchema,
+        paid: moneySchema,
+        modality: z.enum(["CASH", "CREDIT"]),
+      })
+      .parse(input);
+    if (
+      p.paid > p.orderCost ||
+      (p.modality === "CASH" && p.paid !== p.orderCost)
+    )
+      throw new AppError(
+        "Al contado, el pago debe ser igual al costo del pedido; al crédito no puede superarlo.",
+      );
+    const r = await c.query(
+      "UPDATE products SET stock=stock+$1 WHERE id=$2 AND active=true RETURNING id",
+      [p.quantity, p.productId],
+    );
+    if (!r.rows.length) throw new AppError("Producto no disponible.");
+    await c.query(
+      "INSERT INTO receipts(id,date,product_id,quantity,supplier,order_cost,modality,paid,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [
+        p.id,
+        p.date,
+        p.productId,
+        p.quantity,
+        p.supplier,
+        cents(p.orderCost),
+        p.modality,
+        cents(p.paid),
+        u.id,
+      ],
+    );
+    entity = p.id;
   } else if (action === "product") {
     admin(u);
     const p = z

@@ -200,7 +200,39 @@ test("Pago excesivo o digital sin referencia no se registra", async () => {
   }
 });
 
-
+test("Entradas suman stock y validan el saldo al contado y crédito", async () => {
+  const f = await fixture();
+  try {
+    const input = {
+      id: randomUUID(),
+      date: "2026-10-30",
+      productId: f.productId,
+      quantity: 20,
+      supplier: "Proveedor",
+      orderCost: 100,
+      paid: 40,
+      modality: "CREDIT",
+    };
+    await f.run("receipt", input);
+    assert.equal(
+      (await f.c.query("SELECT stock FROM products")).rows[0].stock,
+      30,
+    );
+    assert.equal(
+      Number(
+        (await f.c.query("SELECT order_cost-paid AS balance FROM receipts"))
+          .rows[0].balance,
+      ),
+      6000,
+    );
+    await assert.rejects(
+      f.run("receipt", { ...input, id: randomUUID(), modality: "CASH" }),
+      /Al contado/,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});
 
 
 

@@ -48,6 +48,7 @@ const dateLabel = (v: string) =>
   });
 const nav = [
 { id: "sales", label: "Ventas del día", icon: ShoppingBag },
+{ id: "receipts", label: "Control de entrada", icon: PackagePlus },
 { id: "products", label: "Lista de productos", icon: Boxes, admin: true }
 ];
 const kindLabel: Record<string, string> = {
@@ -416,7 +417,14 @@ export default function Dashboard({ user }: { user: User }) {
                   <Plus size={17} /> Registrar venta
                 </button>
               )}
-              
+              {view === "receipts" && (
+                <button
+                  className="button orange"
+                  onClick={() => setModal({ type: "receipt" })}
+                >
+                  <Plus size={17} /> Registrar entrada
+                </button>
+              )}
               
               {view === "products" && (
                 <button
@@ -506,7 +514,53 @@ export default function Dashboard({ user }: { user: User }) {
                   </p>
                 </section>
               )}
-              
+              {view === "receipts" && (
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Mercadería ingresada</h2>
+                    <span className="pill">Stock actualizado al guardar</span>
+                  </div>
+                  {data.receipts.length ? (
+                    <Table
+                      headers={[
+                        "Fecha",
+                        "Producto",
+                        "Proveedor",
+                        "Cantidad",
+                        "Costo de pedido",
+                        "Modalidad",
+                        "Saldo",
+                        "Registrado por",
+                      ]}
+                    >
+                      {data.receipts.map((r: any) => (
+                        <tr key={r.id}>
+                          <td>{dateLabel(r.date)}</td>
+                          <td>
+                            <strong>{r.name}</strong>
+                            <small>{r.code}</small>
+                          </td>
+                          <td>{r.supplier}</td>
+                          <td>{r.quantity}</td>
+                          <td>{money(r.order_cost)}</td>
+                          <td>{kindLabel[r.modality]}</td>
+                          <td>
+                            {money(Number(r.order_cost) - Number(r.paid))}
+                          </td>
+                          <td>{r.user_name}</td>
+                        </tr>
+                      ))}
+                    </Table>
+                  ) : (
+                    <Empty text="Registra una entrada para sumar mercadería al inventario." />
+                  )}
+                  <p className="panel-hint">
+                    Los costos del pedido registran la compra y su saldo. No se
+                    descuentan automáticamente de caja; registra el pago como
+                    gasto cuando corresponda. Hasta 200 entradas recientes.
+                  </p>
+                </section>
+              )}
               
               
               
@@ -841,7 +895,16 @@ function OperationModal({
         reference: val("reference"),
         detail: val("detail"),
       };
-    
+    if (type === "receipt")
+      body = {
+        ...body,
+        productId: val("productId"),
+        quantity: num("quantity"),
+        supplier: val("supplier"),
+        orderCost: num("orderCost"),
+        paid: num("paid"),
+        modality: val("modality"),
+      };
     
     
     if (type === "product")
@@ -1098,7 +1161,45 @@ function OperationModal({
                 </div>
               </>
             )}
-            
+            {type === "receipt" && (
+              <>
+                <label>
+                  Producto
+                  <select name="productId" required defaultValue="">
+                    <option value="">Selecciona un producto</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.code} · {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Field label="Proveedor" name="supplier" />
+                <div className="form-grid">
+                  <Field
+                    label="Cantidad ingresante"
+                    name="quantity"
+                    type="number"
+                    min="1"
+                    max="1000000"
+                    value={1}
+                  />
+                  <MoneyField label="Costo del pedido (S/)" name="orderCost" />
+                  <label>
+                    Modalidad
+                    <select name="modality">
+                      <option value="CASH">Al contado</option>
+                      <option value="CREDIT">Al crédito</option>
+                    </select>
+                  </label>
+                  <MoneyField label="Monto pagado (S/)" name="paid" />
+                </div>
+                <p className="info-message">
+                  El saldo será costo del pedido menos monto pagado. Registra
+                  aparte cualquier gasto pagado desde caja.
+                </p>
+              </>
+            )}
             
             
             
