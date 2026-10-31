@@ -47,6 +47,7 @@ const dateLabel = (v: string) =>
     year: "numeric",
   });
 const nav = [
+{ id: "sales", label: "Ventas del día", icon: ShoppingBag },
 { id: "products", label: "Lista de productos", icon: Boxes, admin: true }
 ];
 const kindLabel: Record<string, string> = {
@@ -209,7 +210,7 @@ function MoneyField({
 }
 export default function Dashboard({ user }: { user: User }) {
   const router = useRouter();
-  const [view, setView] = useState("products"),
+  const [view, setView] = useState("sales"),
     [date, setDate] = useState(day),
     [period, setPeriod] = useState("day"),
     [data, setData] = useState<any>(null),
@@ -406,7 +407,15 @@ export default function Dashboard({ user }: { user: User }) {
             </div>
             <div className="heading-actions">
               
-              
+              {["overview", "sales"].includes(view) && (
+                <button
+                  className="button orange"
+                  disabled={user.must_change_password || loading}
+                  onClick={() => setModal({ type: "sale" })}
+                >
+                  <Plus size={17} /> Registrar venta
+                </button>
+              )}
               
               
               {view === "products" && (
@@ -482,7 +491,21 @@ export default function Dashboard({ user }: { user: User }) {
             <>
               
               
-              
+              {view === "sales" && (
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Registro de ventas</h2>
+                    <span className="muted">
+                      {data.sales.length} registros visibles
+                    </span>
+                  </div>
+                  <SalesTable sales={data.sales} />
+                  <p className="panel-hint">
+                    Se muestran hasta 200 ventas recientes del período. Los
+                    totales y reportes incluyen todas las operaciones.
+                  </p>
+                </section>
+              )}
               
               
               
@@ -657,7 +680,59 @@ export default function Dashboard({ user }: { user: User }) {
     </div>
   );
 }
-
+function SalesTable({ sales }: { sales: any[] }) {
+  return sales.length ? (
+    <Table
+      headers={[
+        "Fecha",
+        "Productos vendidos",
+        "Facturación",
+        "Yape / transf.",
+        "Deuda",
+        "Efectivo",
+        "Código de operación",
+        "Registrado por",
+      ]}
+    >
+      {sales.map((s) => (
+        <tr key={s.id}>
+          <td>
+            {dateLabel(s.date)}
+            <small>
+              {new Date(s.created_at).toLocaleTimeString("es-PE", {
+                timeZone: "America/Lima",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </small>
+          </td>
+          <td>
+            {s.items?.map((i: any) => (
+              <div key={i.name}>
+                {i.quantity} × {i.name}
+                <small>{money(i.unit_price)} c/u</small>
+              </div>
+            ))}
+            {s.detail && <small>{s.detail}</small>}
+          </td>
+          <td>
+            <strong>{money(s.total)}</strong>
+          </td>
+          <td>
+            {money(s.digital)}
+            {Number(s.digital) > 0 && <small>{kindLabel[s.method]}</small>}
+          </td>
+          <td>{money(s.debt)}</td>
+          <td>{money(s.cash)}</td>
+          <td>{s.reference || "—"}</td>
+          <td>{s.user_name}</td>
+        </tr>
+      ))}
+    </Table>
+  ) : (
+    <Empty text="Todavía no hay ventas registradas en este período." />
+  );
+}
 function OperationModal({
   modal,
   products,
@@ -756,7 +831,16 @@ function OperationModal({
     const val = (n: string) => String(f.get(n) ?? "");
     const num = (n: string) => Number(val(n));
     let body: any = { id, date: val("date") };
-    
+    if (type === "sale")
+      body = {
+        ...body,
+        items,
+        digital,
+        debt,
+        method: val("method"),
+        reference: val("reference"),
+        detail: val("detail"),
+      };
     
     
     
@@ -842,7 +926,178 @@ function OperationModal({
                 value={date}
               />
             )}
-            
+            {type === "sale" && (
+              <>
+                <div className="sale-items">
+                  {items.map((i, index) => (
+                    <div className="sale-line" key={index}>
+                      <label>
+                        Producto
+                        <select
+                          required
+                          aria-label={"Producto " + (index + 1)}
+                          value={i.productId}
+                          onChange={(e) => {
+                            const p = products.find(
+                              (p) => p.id === e.target.value,
+                            );
+                            setItems((prev) =>
+                              prev.map((v, n) =>
+                                n === index
+                                  ? {
+                                      ...v,
+                                      productId: e.target.value,
+                                      unitPrice:
+                                        Number(p?.sale_price ?? 0) / 100,
+                                    }
+                                  : v,
+                              ),
+                            );
+                          }}
+                        >
+                          <option value="">Selecciona un producto</option>
+                          {products.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.code} · {p.name} ({p.stock} disponibles)
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Cantidad
+                        <input
+                          aria-label={"Cantidad " + (index + 1)}
+                          type="number"
+                          min="1"
+                          max="1000000"
+                          required
+                          value={i.quantity}
+                          onChange={(e) =>
+                            setItems((prev) =>
+                              prev.map((v, n) =>
+                                n === index
+                                  ? { ...v, quantity: Number(e.target.value) }
+                                  : v,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      <label>
+                        Precio unit. (S/)
+                        <input
+                          aria-label={"Precio " + (index + 1)}
+                          type="number"
+                          min="0"
+                          max="10000000"
+                          step="0.01"
+                          required
+                          value={i.unitPrice}
+                          onChange={(e) =>
+                            setItems((prev) =>
+                              prev.map((v, n) =>
+                                n === index
+                                  ? { ...v, unitPrice: Number(e.target.value) }
+                                  : v,
+                              ),
+                            )
+                          }
+                        />
+                      </label>
+                      <div className="line-subtotal">
+                        <small>Subtotal</small>
+                        <strong>
+                          {money(Math.round(i.unitPrice * 100) * i.quantity)}
+                        </strong>
+                      </div>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        disabled={items.length === 1}
+                        aria-label={"Quitar producto " + (index + 1)}
+                        onClick={() =>
+                          setItems((prev) => prev.filter((_, n) => n !== index))
+                        }
+                      >
+                        <X size={17} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={items.length >= 50}
+                  onClick={() =>
+                    setItems([
+                      ...items,
+                      { productId: "", quantity: 1, unitPrice: 0 },
+                    ])
+                  }
+                >
+                  <Plus size={16} /> Agregar producto
+                </button>
+                <div className="form-total">
+                  <span>Facturación total</span>
+                  <strong>{money(total)}</strong>
+                </div>
+                <div className="form-grid">
+                  <label>
+                    Yape / transferencia (S/)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={digital}
+                      onChange={(e) => setDigital(Number(e.target.value))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Venta pendiente de cobro (S/)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={debt}
+                      onChange={(e) => setDebt(Number(e.target.value))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Medio digital
+                    <select name="method" defaultValue="YAPE">
+                      <option value="YAPE">Yape</option>
+                      <option value="TRANSFER">Transferencia</option>
+                      <option value="NONE">Sin pago digital</option>
+                    </select>
+                  </label>
+                  <Field
+                    label="Código de operación"
+                    name="reference"
+                    required={digital > 0}
+                    placeholder="Código de Yape o transferencia"
+                  />
+                </div>
+                <Field
+                  label="Detalle / motivo de deuda"
+                  name="detail"
+                  required={debt > 0}
+                  placeholder="Productos vendidos, cliente u observaciones"
+                />
+                <div className="info-message">
+                  Efectivo por recibir:{" "}
+                  <strong>
+                    {money(
+                      total -
+                        Math.round(digital * 100) -
+                        Math.round(debt * 100),
+                    )}
+                  </strong>
+                  . La venta descontará stock al guardar.
+                </div>
+              </>
+            )}
             
             
             
