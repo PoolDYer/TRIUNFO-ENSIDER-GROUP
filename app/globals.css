@@ -1243,6 +1243,41 @@ tr:last-child td {
   font-size: 23px;
   letter-spacing: -0.5px;
 }
+.email-access-field {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid #dce0e5;
+  border-radius: 6px;
+  overflow: hidden;
+  background: white;
+}
+.email-access-field:focus-within {
+  border-color: var(--orange);
+  outline: 2px solid #ec681b44;
+  outline-offset: 1px;
+}
+.email-access-field input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+}
+.email-access-field input:focus {
+  outline: none;
+}
+.email-access-field span {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 9px 10px;
+  border-left: 1px solid #e6e8ec;
+  background: #f5f6f8;
+  color: #737981;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
 .checkbox-label {
   display: flex;
   flex-direction: row;

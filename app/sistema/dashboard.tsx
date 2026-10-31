@@ -1589,7 +1589,7 @@ function OperationModal({
     if (type === "user")
       body = {
         name: val("name"),
-        email: val("email"),
+        email: `${val("username").trim().toLowerCase()}@triunfoensidergroup`,
         password: val("password"),
       };
     if (type === "resetPassword")
@@ -2003,11 +2003,24 @@ function OperationModal({
             {type === "user" && (
               <>
                 <Field label="Nombre del vendedor" name="name" />
-                <Field
-                  label="Correo de acceso"
-                  name="email"
-                  placeholder="nombre@triunfoensidergroup"
-                />
+                <label>
+                  Correo de acceso
+                  <div className="email-access-field">
+                    <input
+                      name="username"
+                      aria-label="Nombre de usuario del vendedor"
+                      aria-describedby="seller-email-domain"
+                      placeholder="nombre"
+                      pattern={"[A-Za-z0-9._\\-]+"}
+                      title="Usa letras, números, puntos, guiones o guiones bajos, sin @."
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      required
+                    />
+                    <span id="seller-email-domain">@triunfoensidergroup</span>
+                  </div>
+                </label>
                 <Field
                   label="Contraseña temporal (mín. 12 caracteres)"
                   name="password"
