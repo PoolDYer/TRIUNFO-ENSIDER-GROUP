@@ -145,7 +145,11 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       ],
     );
     entity = p.id;
-  } else if (action === "expense" || action === "treasury" || action === "bank") {
+  } else if (
+    action === "expense" ||
+    action === "treasury" ||
+    action === "bank"
+  ) {
     const kinds =
       action === "expense"
         ? ["OPERATING", "FIXED"]
@@ -232,6 +236,42 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       p.id,
       p.active,
     ]);
+    entity = p.id;
+  } else if (action === "user") {
+    admin(u);
+    const p = z
+      .object({ name: detail, email: emailSchema, password: passwordSchema })
+      .parse(input);
+    await c.query("LOCK TABLE users IN EXCLUSIVE MODE");
+    const { rows } = await c.query("SELECT count(*)::int AS count FROM users");
+    if (rows[0].count >= 10)
+      throw new AppError("Se alcanzó el máximo de 10 usuarios.");
+    entity = randomUUID();
+    await c.query(
+      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,$2,$3,$4,'SELLER')",
+      [entity, p.name, p.email, await hashPassword(p.password)],
+    );
+  } else if (action === "userStatus") {
+    admin(u);
+    const p = z.object({ id, active: z.boolean() }).parse(input);
+    if (p.id === u.id)
+      throw new AppError("No puedes desactivar tu propia cuenta.");
+    await c.query("UPDATE users SET active=$2 WHERE id=$1 AND role='SELLER'", [
+      p.id,
+      p.active,
+    ]);
+    await c.query("DELETE FROM sessions WHERE user_id=$1", [p.id]);
+    entity = p.id;
+  } else if (action === "resetPassword") {
+    admin(u);
+    const p = z.object({ id, password: passwordSchema }).parse(input);
+    if (p.id === u.id)
+      throw new AppError("Usa Cambiar contraseña para tu propia cuenta.");
+    await c.query(
+      "UPDATE users SET password_hash=$2,must_change_password=true WHERE id=$1",
+      [p.id, await hashPassword(p.password)],
+    );
+    await c.query("DELETE FROM sessions WHERE user_id=$1", [p.id]);
     entity = p.id;
   } else throw new AppError("Operación no reconocida.");
   await c.query(

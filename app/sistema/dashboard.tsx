@@ -53,7 +53,8 @@ const nav = [
 { id: "expenses", label: "Gastos y caja", icon: Receipt },
 { id: "bank", label: "Cuenta corriente", icon: Landmark },
 { id: "reports", label: "Reportes", icon: ChartNoAxesCombined },
-{ id: "products", label: "Lista de productos", icon: Boxes, admin: true }
+{ id: "products", label: "Lista de productos", icon: Boxes, admin: true },
+{ id: "users", label: "Usuarios", icon: Users, admin: true }
 ];
 const kindLabel: Record<string, string> = {
   OPERATING: "Operativo",
@@ -449,7 +450,15 @@ export default function Dashboard({ user }: { user: User }) {
                   <Plus size={17} /> Nuevo producto
                 </button>
               )}
-              
+              {view === "users" && (
+                <button
+                  className="button orange"
+                  disabled={(data?.users?.length ?? 0) >= 10}
+                  onClick={() => setModal({ type: "user" })}
+                >
+                  <Plus size={17} /> Crear vendedor
+                </button>
+              )}
             </div>
           </div>
           {!isSpecial && (
@@ -1210,7 +1219,79 @@ export default function Dashboard({ user }: { user: User }) {
                   </section>
                 </>
               )}
-              
+              {view === "users" && (
+                <section className="panel">
+                  <div className="panel-heading">
+                    <h2>Equipo de trabajo</h2>
+                    <span className="pill">
+                      {data.users.length} de 10 cuentas
+                    </span>
+                  </div>
+                  <Table
+                    headers={[
+                      "Nombre",
+                      "Correo de acceso",
+                      "Rol",
+                      "Estado",
+                      "Acciones",
+                    ]}
+                  >
+                    {data.users.map((r: any) => (
+                      <tr key={r.id}>
+                        <td>
+                          <strong>{r.name}</strong>
+                          {r.must_change_password && (
+                            <small>Cambio de contraseña pendiente</small>
+                          )}
+                        </td>
+                        <td>{r.email}</td>
+                        <td>
+                          <span className="badge">
+                            {r.role === "ADMIN" ? "Administrador" : "Vendedor"}
+                          </span>
+                        </td>
+                        <td>
+                          <span
+                            className={"badge " + (r.active ? "green" : "")}
+                          >
+                            {r.active ? "Activo" : "Inactivo"}
+                          </span>
+                        </td>
+                        <td>
+                          {r.id !== user.id && (
+                            <>
+                              <button
+                                className="text-button"
+                                onClick={() =>
+                                  setModal({ type: "resetPassword", record: r })
+                                }
+                              >
+                                Restablecer clave
+                              </button>
+                              <button
+                                className="text-button"
+                                onClick={() =>
+                                  quick("userStatus", {
+                                    id: r.id,
+                                    active: !r.active,
+                                  })
+                                }
+                              >
+                                {r.active ? "Desactivar" : "Activar"}
+                              </button>
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </Table>
+                  <p className="panel-hint">
+                    Las cuentas desactivadas conservan su historial y siguen
+                    contando dentro del máximo de 10. El administrador crea
+                    vendedores sin registro público ni correo externo.
+                  </p>
+                </section>
+              )}
               
             </>
           )}
@@ -1431,8 +1512,14 @@ function OperationModal({
         minStock: num("minStock"),
         ...(!r ? { stock: num("stock") } : {}),
       };
-    
-    
+    if (type === "user")
+      body = {
+        name: val("name"),
+        email: val("email"),
+        password: val("password"),
+      };
+    if (type === "resetPassword")
+      body = { id: r.id, password: val("password") };
     try {
       const auth = type === "password";
       const resp = await fetch(auth ? "/api/auth" : "/api/operations", {
@@ -1839,8 +1926,39 @@ function OperationModal({
                 )}
               </>
             )}
-            
-            
+            {type === "user" && (
+              <>
+                <Field label="Nombre del vendedor" name="name" />
+                <Field
+                  label="Correo de acceso"
+                  name="email"
+                  placeholder="nombre@triunfoensidergroup"
+                />
+                <Field
+                  label="Contraseña temporal (mín. 12 caracteres)"
+                  name="password"
+                  type="password"
+                />
+                <p className="info-message">
+                  El vendedor deberá cambiar esta contraseña al iniciar sesión.
+                </p>
+              </>
+            )}
+            {type === "resetPassword" && (
+              <>
+                <p>
+                  Cuenta: <strong>{r.email}</strong>
+                </p>
+                <Field
+                  label="Nueva contraseña temporal (mín. 12 caracteres)"
+                  name="password"
+                  type="password"
+                />
+                <p className="info-message">
+                  Se cerrarán las sesiones abiertas de esta cuenta.
+                </p>
+              </>
+            )}
             {type === "password" && (
               <>
                 <Field

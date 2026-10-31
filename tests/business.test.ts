@@ -217,7 +217,30 @@ test("Pago excesivo o digital sin referencia no se registra", async () => {
     await f.pg.close();
   }
 });
-
+test("Vendedor no puede editar productos, usuarios ni ingresar cuenta corriente", async () => {
+  const f = await fixture();
+  try {
+    const u = { ...f.user, role: "SELLER" } as User;
+    await assert.rejects(f.run("product", {}, u), /administrador/);
+    await assert.rejects(f.run("user", {}, u), /administrador/);
+    await assert.rejects(
+      f.run(
+        "bank",
+        {
+          id: randomUUID(),
+          date: "2026-10-30",
+          kind: "INCOME",
+          detail: "Cuenta",
+          amount: 200,
+        },
+        u,
+      ),
+      /administrador/,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});
 test("Entradas suman stock y validan el saldo al contado y crédito", async () => {
   const f = await fixture();
   try {
@@ -328,4 +351,27 @@ test("Gastos, deudas, apertura y entregas no multiplican la facturación", async
     await f.pg.close();
   }
 });
-
+test("Máximo 10 cuentas incluso con creaciones simultáneas", async () => {
+  const f = await fixture();
+  try {
+    await f.c.query(
+      "INSERT INTO users(id,name,email,password_hash,role) SELECT gen_random_uuid(),'Vendedor','v'||n||'@triunfoensidergroup','unused','SELLER' FROM generate_series(1,8) n",
+    );
+    const results = await Promise.allSettled(
+      [1, 2].map((n) =>
+        f.run("user", {
+          name: "Nuevo",
+          email: `nuevo${n}@triunfoensidergroup`,
+          password: "Temporary-12345",
+        }),
+      ),
+    );
+    assert.equal(results.filter((r) => r.status === "fulfilled").length, 1);
+    assert.equal(
+      (await f.c.query("SELECT count(*)::int AS n FROM users")).rows[0].n,
+      10,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});

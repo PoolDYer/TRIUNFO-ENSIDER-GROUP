@@ -24,7 +24,20 @@ export async function GET(req: Request) {
       const products = await db.query("SELECT * FROM products ORDER BY code");
       return NextResponse.json({ products: products.rows }, options);
     }
-    
+    if (view === "users") {
+      if (u.role !== "ADMIN")
+        throw new AppError("Solo el administrador tiene acceso.", 403);
+      return NextResponse.json(
+        {
+          users: (
+            await db.query(
+              "SELECT id,name,email,role,active,must_change_password FROM users ORDER BY role,name",
+            )
+          ).rows,
+        },
+        options,
+      );
+    }
     
     const summary = await transaction(async (c) => {
       await c.query(
