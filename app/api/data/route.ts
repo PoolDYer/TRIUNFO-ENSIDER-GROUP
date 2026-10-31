@@ -38,7 +38,23 @@ export async function GET(req: Request) {
         options,
       );
     }
-    
+    if (view === "audit") {
+      if (u.role !== "ADMIN")
+        throw new AppError("Solo el administrador tiene acceso.", 403);
+      return NextResponse.json(
+        {
+          audit: (
+            await db.query(
+              "SELECT a.*,u.name FROM audit_log a JOIN users u ON u.id=a.user_id ORDER BY a.created_at DESC LIMIT 200",
+            )
+          ).rows,
+          reference: (
+            await db.query("SELECT * FROM initial_reference ORDER BY id")
+          ).rows,
+        },
+        options,
+      );
+    }
     const summary = await transaction(async (c) => {
       await c.query(
         "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY",

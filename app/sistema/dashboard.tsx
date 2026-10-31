@@ -47,14 +47,15 @@ const dateLabel = (v: string) =>
     year: "numeric",
   });
 const nav = [
-{ id: "overview", label: "Resumen", icon: LayoutDashboard },
-{ id: "sales", label: "Ventas del día", icon: ShoppingBag },
-{ id: "receipts", label: "Control de entrada", icon: PackagePlus },
-{ id: "expenses", label: "Gastos y caja", icon: Receipt },
-{ id: "bank", label: "Cuenta corriente", icon: Landmark },
-{ id: "reports", label: "Reportes", icon: ChartNoAxesCombined },
-{ id: "products", label: "Lista de productos", icon: Boxes, admin: true },
-{ id: "users", label: "Usuarios", icon: Users, admin: true }
+  { id: "overview", label: "Resumen", icon: LayoutDashboard },
+  { id: "sales", label: "Ventas del día", icon: ShoppingBag },
+  { id: "receipts", label: "Control de entrada", icon: PackagePlus },
+  { id: "expenses", label: "Gastos y caja", icon: Receipt },
+  { id: "bank", label: "Cuenta corriente", icon: Landmark },
+  { id: "reports", label: "Reportes", icon: ChartNoAxesCombined },
+  { id: "products", label: "Lista de productos", icon: Boxes, admin: true },
+  { id: "users", label: "Usuarios", icon: Users, admin: true },
+  { id: "audit", label: "Trazabilidad", icon: History, admin: true },
 ];
 const kindLabel: Record<string, string> = {
   OPERATING: "Operativo",
@@ -1292,7 +1293,80 @@ export default function Dashboard({ user }: { user: User }) {
                   </p>
                 </section>
               )}
-              
+              {view === "audit" && (
+                <>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <h2>Historial de operaciones</h2>
+                      <span className="muted">Últimas 200 operaciones</span>
+                    </div>
+                    {data.audit.length ? (
+                      <Table
+                        headers={[
+                          "Fecha y hora",
+                          "Usuario",
+                          "Operación",
+                          "Referencia",
+                        ]}
+                      >
+                        {data.audit.map((r: any) => (
+                          <tr key={r.id}>
+                            <td>
+                              {new Date(r.created_at).toLocaleString("es-PE", {
+                                timeZone: "America/Lima",
+                              })}
+                            </td>
+                            <td>{r.name}</td>
+                            <td>{actionLabel[r.action] ?? r.action}</td>
+                            <td className="muted">{r.entity_id}</td>
+                          </tr>
+                        ))}
+                      </Table>
+                    ) : (
+                      <Empty />
+                    )}
+                  </section>
+                  {data.reference.map((r: any) => (
+                    <section className="panel" key={r.id}>
+                      <div className="panel-heading">
+                        <h2>Historial del archivo de origen</h2>
+                        <span className="pill">Solo referencia</span>
+                      </div>
+                      <p className="panel-hint">{r.data.note}</p>
+                      <Table
+                        headers={[
+                          "Producto",
+                          "Entrada histórica",
+                          "Fecha de entrada",
+                          "Venta sin fecha",
+                          "Facturación histórica",
+                        ]}
+                      >
+                        {r.data.incoming.map((i: any) => (
+                          <tr key={i.code}>
+                            <td>
+                              {i.code} · {i.name}
+                            </td>
+                            <td>{i.quantity}</td>
+                            <td>{dateLabel(i.date)}</td>
+                            <td>
+                              {r.data.sales.find((s: any) => s.code === i.code)
+                                ?.quantity ?? 0}
+                            </td>
+                            <td>
+                              {money(
+                                (r.data.sales.find(
+                                  (s: any) => s.code === i.code,
+                                )?.billing ?? 0) * 100,
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </Table>
+                    </section>
+                  ))}
+                </>
+              )}
             </>
           )}
           <footer className="app-footer">
