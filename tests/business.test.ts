@@ -234,5 +234,51 @@ test("Entradas suman stock y validan el saldo al contado y crédito", async () =
   }
 });
 
-
+test("Gastos, deudas, apertura y entregas no multiplican la facturación", async () => {
+  const f = await fixture();
+  try {
+    await f.run("sale", sale(f.productId, 10));
+    for (const amount of [10, 5, 8, 10])
+      await f.run("expense", {
+        id: randomUUID(),
+        date: "2026-10-30",
+        kind: "OPERATING",
+        detail: "Comida / pasaje",
+        amount,
+      });
+    await f.run("expense", {
+      id: randomUUID(),
+      date: "2026-10-30",
+      kind: "FIXED",
+      detail: "Servicio",
+      amount: 15,
+    });
+    await f.run("treasury", {
+      id: randomUUID(),
+      date: "2026-10-30",
+      kind: "DEBT",
+      detail: "Deuda",
+      amount: 10,
+    });
+    await f.run("treasury", {
+      id: randomUUID(),
+      date: "2026-10-30",
+      kind: "DELIVERY",
+      detail: "Entrega",
+      amount: 5,
+    });
+    await f.run("opening", { date: "2026-10-30", amount: 20 });
+    await assert.rejects(
+      f.run("opening", { date: "2026-10-30", amount: 20 }),
+      /apertura/,
+    );
+    const r = await report(f.c, "2026-10-30", "2026-10-30", "day");
+    assert.equal(r.totals.billing, 10000);
+    assert.equal(r.totals.excelCash, 5700);
+    assert.equal(r.totals.netCash, 4200);
+    assert.equal(r.totals.available, 5700);
+  } finally {
+    await f.pg.close();
+  }
+});
 

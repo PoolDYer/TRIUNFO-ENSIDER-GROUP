@@ -49,6 +49,7 @@ const dateLabel = (v: string) =>
 const nav = [
 { id: "sales", label: "Ventas del día", icon: ShoppingBag },
 { id: "receipts", label: "Control de entrada", icon: PackagePlus },
+{ id: "expenses", label: "Gastos y caja", icon: Receipt },
 { id: "products", label: "Lista de productos", icon: Boxes, admin: true }
 ];
 const kindLabel: Record<string, string> = {
@@ -425,7 +426,14 @@ export default function Dashboard({ user }: { user: User }) {
                   <Plus size={17} /> Registrar entrada
                 </button>
               )}
-              
+              {view === "expenses" && (
+                <button
+                  className="button orange"
+                  onClick={() => setModal({ type: "expense" })}
+                >
+                  <Plus size={17} /> Registrar gasto
+                </button>
+              )}
               {view === "products" && (
                 <button
                   className="button orange"
@@ -561,7 +569,107 @@ export default function Dashboard({ user }: { user: User }) {
                   </p>
                 </section>
               )}
-              
+              {view === "expenses" && (
+                <>
+                  <div className="small-grid">
+                    <button
+                      className="quick-panel"
+                      onClick={() => setModal({ type: "opening" })}
+                    >
+                      <Wallet size={22} />
+                      <div>
+                        <strong>Apertura de caja</strong>
+                        <span>Monto inicial en físico</span>
+                      </div>
+                      <Plus size={18} />
+                    </button>
+                    <button
+                      className="quick-panel"
+                      onClick={() => setModal({ type: "treasury" })}
+                    >
+                      <ArrowUpRight size={22} />
+                      <div>
+                        <strong>Deudas, depósitos y entregas</strong>
+                        <span>Registrar salida de efectivo</span>
+                      </div>
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <h2>Gastos registrados</h2>
+                    </div>
+                    {data.expenses.length ? (
+                      <Table
+                        headers={[
+                          "Fecha",
+                          "Detalle",
+                          "Tipo",
+                          "Monto",
+                          "Registrado por",
+                        ]}
+                      >
+                        {data.expenses.map((r: any) => (
+                          <tr key={r.id}>
+                            <td>{dateLabel(r.date)}</td>
+                            <td>{r.detail}</td>
+                            <td>
+                              <span className="badge">{kindLabel[r.kind]}</span>
+                            </td>
+                            <td>{money(r.amount)}</td>
+                            <td>{r.user_name}</td>
+                          </tr>
+                        ))}
+                      </Table>
+                    ) : (
+                      <Empty />
+                    )}
+                  </section>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <h2>Movimientos de caja</h2>
+                      <span className="muted">
+                        Aperturas del período: {money(t.opening)}
+                      </span>
+                    </div>
+                    {data.treasury.length ? (
+                      <Table
+                        headers={[
+                          "Fecha",
+                          "Detalle",
+                          "Tipo",
+                          "Monto",
+                          "Registrado por",
+                        ]}
+                      >
+                        {data.treasury.map((r: any) => (
+                          <tr key={r.id}>
+                            <td>{dateLabel(r.date)}</td>
+                            <td>{r.detail}</td>
+                            <td>{kindLabel[r.kind]}</td>
+                            <td>{money(r.amount)}</td>
+                            <td>{r.user_name}</td>
+                          </tr>
+                        ))}
+                      </Table>
+                    ) : (
+                      <Empty />
+                    )}
+                    <div className="panel-footer">
+                      <span>
+                        Disponible calculado: aperturas + caja neta − depositado
+                        − entregado
+                      </span>
+                      <strong>{money(t.available)}</strong>
+                    </div>
+                    <p className="panel-hint">
+                      Las deudas de ventas ya se descuentan. No vuelvas a
+                      registrarlas como movimiento de deuda. Cada tabla muestra
+                      hasta 200 registros recientes.
+                    </p>
+                  </section>
+                </>
+              )}
               
               
               {view === "products" && (
@@ -905,8 +1013,14 @@ function OperationModal({
         paid: num("paid"),
         modality: val("modality"),
       };
-    
-    
+    if (["expense", "treasury", "bank"].includes(type))
+      body = {
+        ...body,
+        kind: type === "bank" ? r.kind : val("kind"),
+        detail: val("detail"),
+        amount: num("amount"),
+      };
+    if (type === "opening") body = { date: val("date"), amount: num("amount") };
     if (type === "product")
       body = {
         id: r?.id ?? id,
@@ -1200,10 +1314,55 @@ function OperationModal({
                 </p>
               </>
             )}
+            {type === "expense" && (
+              <>
+                <label>
+                  Tipo de gasto
+                  <select name="kind">
+                    <option value="OPERATING">
+                      Operativo: comida, pasajes y otros
+                    </option>
+                    <option value="FIXED">
+                      Fijo: alquiler, servicios, fletes
+                    </option>
+                  </select>
+                </label>
+                <Field label="Descripción del gasto" name="detail" />
+                <MoneyField label="Monto (S/)" name="amount" />
+              </>
+            )}
+            {type === "treasury" && (
+              <>
+                <label>
+                  Tipo de movimiento
+                  <select name="kind">
+                    <option value="DEBT">
+                      Deuda / descuento manual de caja
+                    </option>
+                    <option value="DEPOSIT">Efectivo depositado</option>
+                    <option value="DELIVERY">Efectivo entregado</option>
+                  </select>
+                </label>
+                <Field label="Motivo del movimiento" name="detail" />
+                <MoneyField label="Monto (S/)" name="amount" />
+                <p className="info-message">
+                  No dupliques aquí las deudas registradas dentro de una venta.
+                </p>
+              </>
+            )}
             
-            
-            
-            
+            {type === "opening" && (
+              <>
+                <MoneyField
+                  label="Monto inicial en físico (S/)"
+                  name="amount"
+                />
+                <p className="info-message">
+                  Solo se permite una apertura por fecha, compartida por todo el
+                  equipo.
+                </p>
+              </>
+            )}
             {type === "product" && (
               <>
                 <div className="form-grid">

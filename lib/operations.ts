@@ -145,6 +145,44 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       ],
     );
     entity = p.id;
+  } else if (action === "expense" || action === "treasury") {
+    const kinds =
+      action === "expense"
+        ? ["OPERATING", "FIXED"]
+        : action === "treasury"
+          ? ["DEBT", "DEPOSIT", "DELIVERY"]
+          : ["INCOME", "WITHDRAWAL"];
+    const p = z
+      .object({ ...base, kind: z.string(), detail, amount: positiveMoney })
+      .parse(input);
+    if (!kinds.includes(p.kind))
+      throw new AppError("Tipo de movimiento inválido.");
+    if (action === "bank" && p.kind === "INCOME") admin(u);
+    const table =
+      action === "expense"
+        ? "expenses"
+        : action === "treasury"
+          ? "treasury"
+          : "bank_movements";
+    await c.query(
+      `INSERT INTO ${table}(id,date,kind,detail,amount,user_id) VALUES($1,$2,$3,$4,$5,$6)`,
+      [p.id, p.date, p.kind, p.detail, cents(p.amount), u.id],
+    );
+    entity = p.id;
+  } else if (action === "opening") {
+    const p = z.object({ date: dateSchema, amount: moneySchema }).parse(input);
+    // A unique opening per business day avoids counting each seller's opening again.
+    try {
+      await c.query(
+        "INSERT INTO cash_openings(date,amount,user_id) VALUES($1,$2,$3)",
+        [p.date, cents(p.amount), u.id],
+      );
+    } catch (e) {
+      if ((e as { code?: string }).code === "23505")
+        throw new AppError("Ya se registró la apertura de esta fecha.", 409);
+      throw e;
+    }
+    entity = p.date;
   } else if (action === "product") {
     admin(u);
     const p = z
