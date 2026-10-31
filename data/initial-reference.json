@@ -1,0 +1,105 @@
+{
+  "note": "Stock inicial importado de LISTA DE PRODUCTOS. Historial solo de referencia; no afecta stock ni caja. Las ventas no tienen fecha y los costos de compra no están informados.",
+  "incoming": [
+    {
+      "code": "P001",
+      "name": "AFEITADOR DESECHABLE DE 3 HOJAS",
+      "supplier": "CORP. G.S. S.A.",
+      "quantity": 100.0,
+      "date": "2026-10-30 00:00:00"
+    },
+    {
+      "code": "P002",
+      "name": "MASAGEADOR TERAPÊUTICO",
+      "supplier": "CORP. G.S. S.A.",
+      "quantity": 100.0,
+      "date": "2026-10-31 00:00:00"
+    },
+    {
+      "code": "P003",
+      "name": "MINIPICADORA DE 5 CUCHILLAS Y 2 NIVELES",
+      "supplier": "CORP. G.S. S.A.",
+      "quantity": 100.0,
+      "date": "2026-11-01 00:00:00"
+    },
+    {
+      "code": "P004",
+      "name": "LIBROS DIDÁCTICOS",
+      "supplier": "CORP. G.S. S.A.",
+      "quantity": 100.0,
+      "date": "2026-11-02 00:00:00"
+    },
+    {
+      "code": "P005",
+      "name": "MAQUINA DE AFEITAR TRIMER",
+      "supplier": "CORP. G.S. S.A.",
+      "quantity": 100.0,
+      "date": "2026-11-03 00:00:00"
+    },
+    {
+      "code": "P006",
+      "name": "PICATODO GRANDE",
+      "supplier": "CORP. G.S. S.A.",
+      "quantity": 100.0,
+      "date": "2026-11-04 00:00:00"
+    },
+    {
+      "code": "P007",
+      "name": "PIZARRA MÁGICA",
+      "supplier": "CORP. G.S. S.A.",
+      "quantity": 100.0,
+      "date": "2026-11-05 00:00:00"
+    }
+  ],
+  "sales": [
+    {
+      "code": "P001",
+      "name": "AFEITADOR DESECHABLE DE 3 HOJAS",
+      "quantity": 10.0,
+      "price": 8.0,
+      "billing": 80
+    },
+    {
+      "code": "P002",
+      "name": "MASAGEADOR TERAPÊUTICO",
+      "quantity": 8.0,
+      "price": 9.0,
+      "billing": 72
+    },
+    {
+      "code": "P003",
+      "name": "MINIPICADORA DE 5 CUCHILLAS Y 2 NIVELES",
+      "quantity": 5.0,
+      "price": 10.0,
+      "billing": 50
+    },
+    {
+      "code": "P004",
+      "name": "LIBROS DIDÁCTICOS",
+      "quantity": 3.0,
+      "price": 11.0,
+      "billing": 33
+    },
+    {
+      "code": "P005",
+      "name": "MAQUINA DE AFEITAR TRIMER",
+      "quantity": 5.0,
+      "price": 12.0,
+      "billing": 60
+    },
+    {
+      "code": "P006",
+      "name": "PICATODO GRANDE",
+      "quantity": 0.0,
+      "price": null,
+      "billing": null
+    },
+    {
+      "code": "P007",
+      "name": "PIZARRA MÁGICA",
+      "quantity": 0.0,
+      "price": null,
+      "billing": null
+    }
+  ]
+}
