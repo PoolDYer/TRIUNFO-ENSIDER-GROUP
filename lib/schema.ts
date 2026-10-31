@@ -1,0 +1,72 @@
+export const schema = `
+CREATE TABLE IF NOT EXISTS users (
+ id uuid PRIMARY KEY, name text NOT NULL, email text UNIQUE NOT NULL,
+ password_hash text NOT NULL, role text NOT NULL CHECK(role IN ('ADMIN','SELLER')),
+ active boolean NOT NULL DEFAULT true, must_change_password boolean NOT NULL DEFAULT true,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS sessions (
+ token_hash text PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id),
+ expires_at timestamptz NOT NULL
+);
+CREATE TABLE IF NOT EXISTS login_attempts (
+ key text PRIMARY KEY, attempts integer NOT NULL DEFAULT 0, window_start timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS products (
+ id uuid PRIMARY KEY, code text UNIQUE NOT NULL, name text NOT NULL,
+ stock integer NOT NULL CHECK(stock >= 0), sale_price bigint NOT NULL CHECK(sale_price >= 0),
+ purchase_price bigint CHECK(purchase_price >= 0), active boolean NOT NULL DEFAULT true,
+ min_stock integer NOT NULL DEFAULT 10 CHECK(min_stock >= 0)
+);
+CREATE TABLE IF NOT EXISTS sales (
+ id uuid PRIMARY KEY, date date NOT NULL, detail text NOT NULL DEFAULT '',
+ cash bigint NOT NULL CHECK(cash >= 0), digital bigint NOT NULL CHECK(digital >= 0),
+ debt bigint NOT NULL CHECK(debt >= 0), method text NOT NULL, reference text NOT NULL DEFAULT '',
+ total bigint NOT NULL CHECK(total = cash + digital + debt), user_id uuid NOT NULL REFERENCES users(id),
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS sale_items (
+ id uuid PRIMARY KEY, sale_id uuid NOT NULL REFERENCES sales(id), product_id uuid NOT NULL REFERENCES products(id),
+ code text NOT NULL, name text NOT NULL, quantity integer NOT NULL CHECK(quantity > 0),
+ unit_price bigint NOT NULL CHECK(unit_price >= 0), purchase_price bigint
+);
+CREATE TABLE IF NOT EXISTS receipts (
+ id uuid PRIMARY KEY, date date NOT NULL, product_id uuid NOT NULL REFERENCES products(id),
+ quantity integer NOT NULL CHECK(quantity > 0), supplier text NOT NULL, order_cost bigint NOT NULL CHECK(order_cost >= 0),
+ modality text NOT NULL CHECK(modality IN ('CASH','CREDIT')), paid bigint NOT NULL CHECK(paid >= 0 AND paid <= order_cost),
+ user_id uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS expenses (
+ id uuid PRIMARY KEY, date date NOT NULL, kind text NOT NULL CHECK(kind IN ('OPERATING','FIXED')),
+ detail text NOT NULL, amount bigint NOT NULL CHECK(amount > 0), user_id uuid NOT NULL REFERENCES users(id),
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS treasury (
+ id uuid PRIMARY KEY, date date NOT NULL, kind text NOT NULL CHECK(kind IN ('DEBT','DEPOSIT','DELIVERY')),
+ detail text NOT NULL, amount bigint NOT NULL CHECK(amount > 0), user_id uuid NOT NULL REFERENCES users(id),
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS bank_movements (
+ id uuid PRIMARY KEY, date date NOT NULL, kind text NOT NULL CHECK(kind IN ('INCOME','WITHDRAWAL')),
+ detail text NOT NULL, amount bigint NOT NULL CHECK(amount > 0), user_id uuid NOT NULL REFERENCES users(id),
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS cash_openings (
+ date date PRIMARY KEY, amount bigint NOT NULL CHECK(amount >= 0), user_id uuid NOT NULL REFERENCES users(id)
+);
+CREATE TABLE IF NOT EXISTS audit_log (
+ id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id), action text NOT NULL,
+ entity_id text NOT NULL, created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS initial_reference (
+ id text PRIMARY KEY, source text NOT NULL, data jsonb NOT NULL
+);
+CREATE INDEX IF NOT EXISTS sales_date_idx ON sales(date);
+CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items(sale_id);
+CREATE INDEX IF NOT EXISTS expenses_date_idx ON expenses(date);
+CREATE INDEX IF NOT EXISTS bank_date_idx ON bank_movements(date);
+CREATE INDEX IF NOT EXISTS treasury_date_idx ON treasury(date);
+CREATE INDEX IF NOT EXISTS receipts_date_idx ON receipts(date);
+CREATE INDEX IF NOT EXISTS audit_date_idx ON audit_log(created_at);
+CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions(user_id);
+`;
