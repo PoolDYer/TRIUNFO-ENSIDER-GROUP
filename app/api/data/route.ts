@@ -32,7 +32,68 @@ export async function GET(req: Request) {
       );
       return report(c, start, end, period);
     });
-    
+    if (url.searchParams.get("export") === "csv") {
+      const cell = (v: unknown) =>
+        '"' +
+        String(v ?? "")
+          .replace(/^[=+@-]/, "'$&")
+          .replaceAll('"', '""') +
+        '"';
+      const money = (v: unknown) => (Number(v) / 100).toFixed(2);
+      const labels: Record<string, string> = {
+        billing: "Facturación",
+        cashReceipts: "Ingresos en efectivo",
+        digital: "Yape / transferencias",
+        operating: "Gastos operativos",
+        fixed: "Gastos fijos",
+        debt: "Deudas",
+        opening: "Aperturas registradas",
+        deposits: "Depositado",
+        deliveries: "Entregado",
+        excelCash: "Caja según ejemplo",
+        netCash: "Caja neta después de gastos fijos y deudas",
+        available: "Disponible incluyendo aperturas y disposiciones",
+        bankIncome: "Ingresos cuenta corriente",
+        bankWithdrawals: "Retiros cuenta corriente",
+        bankNet: "Neto cuenta corriente del período",
+        bankAccumulated: "Acumulado cuenta corriente al cierre",
+      };
+      const lines = [
+        ["TRIUNFO ENSIDER GROUP", start, end],
+        ["Concepto", "Soles"],
+        ...Object.entries(labels).map(([k, v]) => [
+          v,
+          money(summary.totals[k as keyof typeof summary.totals]),
+        ]),
+        [],
+        [
+          "Código",
+          "Producto",
+          "Stock actual",
+          "Cantidad",
+          "Precio unitario",
+          "Facturación",
+        ],
+        ...summary.items.map((i) => [
+          i.code,
+          i.name,
+          i.stock,
+          i.quantity,
+          money(i.unit_price),
+          money(i.total),
+        ]),
+      ];
+      return new Response(
+        "\ufeff" + lines.map((r) => r.map(cell).join(";")).join("\r\n"),
+        {
+          headers: {
+            "Content-Type": "text/csv; charset=utf-8",
+            "Content-Disposition": `attachment; filename="triunfo-${period}-${start}.csv"`,
+            "Cache-Control": "private, no-store",
+          },
+        },
+      );
+    }
     const products = (
       await db.query(
         "SELECT id,code,name,stock,sale_price,min_stock FROM products WHERE active=true ORDER BY code",

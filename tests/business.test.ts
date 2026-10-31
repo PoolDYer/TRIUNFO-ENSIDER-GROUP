@@ -78,7 +78,25 @@ test("Origen valida el Host externo incluso detrás del proxy de Next", () => {
     /Origen/,
   );
 });
-
+test("Fórmulas del ejemplo: diario 1947 y semanal 7792; neto semanal 7637", () => {
+  const base = {
+    billing: 222500,
+    digital: 23500,
+    operating: 3300,
+    fixed: 0,
+    debt: 1000,
+    opening: 0,
+    deposits: 0,
+    deliveries: 0,
+  };
+  assert.equal(calculateTotals(base, "day").excelCash, 194700);
+  const weekly = calculateTotals(
+    { ...base, billing: 806000, fixed: 15500, debt: 0 },
+    "week",
+  );
+  assert.equal(weekly.excelCash, 779200);
+  assert.equal(weekly.netCash, 763700);
+});
 test("Fechas de Lima, semanas lunes-domingo y fin de mes bisiesto", () => {
   assert.deepEqual(periodRange("2026-11-01", "week"), {
     start: "2026-10-26",

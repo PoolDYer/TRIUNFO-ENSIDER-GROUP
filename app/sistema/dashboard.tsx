@@ -47,10 +47,12 @@ const dateLabel = (v: string) =>
     year: "numeric",
   });
 const nav = [
+{ id: "overview", label: "Resumen", icon: LayoutDashboard },
 { id: "sales", label: "Ventas del día", icon: ShoppingBag },
 { id: "receipts", label: "Control de entrada", icon: PackagePlus },
 { id: "expenses", label: "Gastos y caja", icon: Receipt },
 { id: "bank", label: "Cuenta corriente", icon: Landmark },
+{ id: "reports", label: "Reportes", icon: ChartNoAxesCombined },
 { id: "products", label: "Lista de productos", icon: Boxes, admin: true }
 ];
 const kindLabel: Record<string, string> = {
@@ -213,7 +215,7 @@ function MoneyField({
 }
 export default function Dashboard({ user }: { user: User }) {
   const router = useRouter();
-  const [view, setView] = useState("sales"),
+  const [view, setView] = useState("overview"),
     [date, setDate] = useState(day),
     [period, setPeriod] = useState("day"),
     [data, setData] = useState<any>(null),
@@ -409,7 +411,11 @@ export default function Dashboard({ user }: { user: User }) {
               </p>
             </div>
             <div className="heading-actions">
-              
+              {!isSpecial && (
+                <a className="button secondary" href={exportUrl}>
+                  <Download size={16} /> Exportar
+                </a>
+              )}
               {["overview", "sales"].includes(view) && (
                 <button
                   className="button orange"
@@ -506,8 +512,178 @@ export default function Dashboard({ user }: { user: User }) {
           )}
           {!loading && data && (
             <>
-              
-              
+              {t && ["overview", "reports"].includes(view) && (
+                <>
+                  <div className="period-caption">
+                    {dateLabel(data.summary.start)}
+                    {data.summary.start !== data.summary.end
+                      ? " al " + dateLabel(data.summary.end)
+                      : ""}
+                    <span>Montos expresados en soles</span>
+                  </div>
+                  <section className="stats">
+                    <Stat
+                      label="Facturación"
+                      value={money(t.billing)}
+                      icon={ShoppingBag}
+                      note={`${t.salesCount} operaciones registradas`}
+                    />
+                    <Stat
+                      label="Yape / transferencias"
+                      value={money(t.digital)}
+                      icon={ArrowUpRight}
+                      note="Cobros fuera de caja física"
+                    />
+                    <Stat
+                      label="Gastos del período"
+                      value={money(t.operating + t.fixed)}
+                      icon={ArrowDownLeft}
+                      note={`Operativos ${money(t.operating)} · Fijos ${money(t.fixed)}`}
+                    />
+                    <Stat
+                      label="Caja neta"
+                      value={money(t.netCash)}
+                      icon={Wallet}
+                      note="Después de gastos fijos y deudas"
+                      accent
+                    />
+                  </section>
+                </>
+              )}
+              {view === "overview" && (
+                <>
+                  <div className="dashboard-grid">
+                    <section className="panel sales-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h2>Actividad comercial</h2>
+                          <p>Facturación por día del período</p>
+                        </div>
+                        <ChartNoAxesCombined size={20} />
+                      </div>
+                      {data.summary.daily.length ? (
+                        <div className="bar-chart">
+                          {data.summary.daily.map((d: any) => (
+                            <div className="bar-column" key={d.date}>
+                              <span>{money(d.total)}</span>
+                              <div className="bar-track">
+                                <div
+                                  style={{
+                                    height:
+                                      Math.max(
+                                        3,
+                                        (Number(d.total) /
+                                          Math.max(
+                                            ...data.summary.daily.map(
+                                              (x: any) => Number(x.total),
+                                            ),
+                                          )) *
+                                          100,
+                                      ) + "%",
+                                  }}
+                                />
+                              </div>
+                              <small>
+                                {d.date.slice(8, 10)}/{d.date.slice(5, 7)}
+                              </small>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <Empty text="Las ventas registradas aparecerán aquí." />
+                      )}
+                      <div className="panel-footer">
+                        <span>Cuenta corriente del período</span>
+                        <strong>{money(t.bankNet)}</strong>
+                        <button
+                          className="text-button"
+                          onClick={() => navigate("bank")}
+                        >
+                          Ver detalle <ArrowUpRight size={15} />
+                        </button>
+                      </div>
+                    </section>
+                    <section className="panel cash-panel">
+                      <div className="panel-heading">
+                        <div>
+                          <h2>Composición de caja</h2>
+                          <p>Del registro al efectivo disponible</p>
+                        </div>
+                      </div>
+                      <div className="cash-lines">
+                        <div>
+                          <span>Facturación</span>
+                          <strong>{money(t.billing)}</strong>
+                        </div>
+                        <div>
+                          <span>Yape / transferencias</span>
+                          <span>− {money(t.digital)}</span>
+                        </div>
+                        <div>
+                          <span>Gastos operativos</span>
+                          <span>− {money(t.operating)}</span>
+                        </div>
+                        <div>
+                          <span>Deudas</span>
+                          <span>− {money(t.debt)}</span>
+                        </div>
+                        <div className="subtotal">
+                          <span>Caja según ejemplo</span>
+                          <strong>{money(t.excelCash)}</strong>
+                        </div>
+                        <div>
+                          <span>Gastos fijos</span>
+                          <span>− {money(t.fixed)}</span>
+                        </div>
+                        <div className="total">
+                          <span>Caja neta</span>
+                          <strong>{money(t.netCash)}</strong>
+                        </div>
+                      </div>
+                      <p className="panel-hint">
+                        {period === "day"
+                          ? "La caja del ejemplo descuenta deudas."
+                          : "El ejemplo semanal no descuenta deudas ni gastos fijos. La caja neta sí los contempla."}
+                      </p>
+                    </section>
+                  </div>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h2>Últimas ventas</h2>
+                        <p>Las operaciones más recientes del período</p>
+                      </div>
+                      <button
+                        className="text-button"
+                        onClick={() => navigate("sales")}
+                      >
+                        Ver todas <ArrowUpRight size={15} />
+                      </button>
+                    </div>
+                    <SalesTable sales={data.sales.slice(0, 5)} />
+                  </section>
+                  <div className="small-grid">
+                    <button
+                      className="quick-panel"
+                      onClick={() => setModal({ type: "opening" })}
+                    >
+                      <Wallet size={22} />
+                      <div>
+                        <strong>Apertura de caja</strong>
+                        <span>Registrar efectivo inicial del día</span>
+                      </div>
+                      <Plus size={18} />
+                    </button>
+                    <div className="quick-panel">
+                      <Package size={22} />
+                      <div>
+                        <strong>{low.length} productos con stock bajo</strong>
+                        <span>Umbral definido por el administrador</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
               {view === "sales" && (
                 <section className="panel">
                   <div className="panel-heading">
@@ -807,7 +983,95 @@ export default function Dashboard({ user }: { user: User }) {
                   </section>
                 </>
               )}
-              
+              {view === "reports" && (
+                <>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h2>Control de salida y facturación</h2>
+                        <p>
+                          Los precios históricos se conservan por venta. El
+                          stock mostrado es el actual.
+                        </p>
+                      </div>
+                      <button
+                        className="button secondary"
+                        onClick={() => window.print()}
+                      >
+                        <Printer size={16} /> Imprimir
+                      </button>
+                    </div>
+                    {data.summary.items.length ? (
+                      <Table
+                        headers={[
+                          "Código",
+                          "Producto",
+                          "Stock actual",
+                          "Cantidad vendida",
+                          "Precio unitario",
+                          "Facturación",
+                        ]}
+                      >
+                        {data.summary.items.map((r: any) => (
+                          <tr key={r.code + "-" + r.unit_price}>
+                            <td>{r.code}</td>
+                            <td>{r.name}</td>
+                            <td>{r.stock}</td>
+                            <td>{r.quantity}</td>
+                            <td>{money(r.unit_price)}</td>
+                            <td>
+                              <strong>{money(r.total)}</strong>
+                            </td>
+                          </tr>
+                        ))}
+                      </Table>
+                    ) : (
+                      <Empty />
+                    )}
+                  </section>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <h2>Control financiero</h2>
+                    </div>
+                    <div className="report-ledger">
+                      {[
+                        ["Facturación", t.billing],
+                        ["Ingresos en efectivo", t.cashReceipts],
+                        ["Yape / transferencias", t.digital],
+                        ["Gastos operativos", t.operating],
+                        ["Deudas", t.debt],
+                        ["Caja según ejemplo", t.excelCash],
+                        ["Gastos fijos", t.fixed],
+                        [
+                          "Caja neta después de gastos fijos y deudas",
+                          t.netCash,
+                        ],
+                        ["Aperturas de caja registradas", t.opening],
+                        ["Depositado", t.deposits],
+                        ["Entregado", t.deliveries],
+                        ["Disponible calculado", t.available],
+                        ["Ingresos de cuenta corriente", t.bankIncome],
+                        ["Retiros de cuenta corriente", t.bankWithdrawals],
+                        ["Neto de cuenta corriente del período", t.bankNet],
+                        ["Acumulado de cuenta corriente", t.bankAccumulated],
+                      ].map(([l, v]) => (
+                        <div key={l}>
+                          <span>{l}</span>
+                          <strong>{money(v)}</strong>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="panel-hint">
+                      Caja según ejemplo: facturación − pagos digitales − gastos
+                      operativos{period === "day" ? " − deudas" : ""}. Caja
+                      neta: facturación − pagos digitales − gastos operativos −
+                      deudas − gastos fijos. En períodos de varios días, las
+                      aperturas son una suma de registros diarios, no un saldo
+                      bancario ni un arrastre automático.
+                    </p>
+                  </section>
+                </>
+              )}
               {view === "products" && (
                 <>
                   <div className="restricted-note">
