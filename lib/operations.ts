@@ -145,7 +145,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       ],
     );
     entity = p.id;
-  } else if (action === "expense" || action === "treasury") {
+  } else if (action === "expense" || action === "treasury" || action === "bank") {
     const kinds =
       action === "expense"
         ? ["OPERATING", "FIXED"]

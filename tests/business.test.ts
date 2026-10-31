@@ -233,7 +233,36 @@ test("Entradas suman stock y validan el saldo al contado y crédito", async () =
     await f.pg.close();
   }
 });
-
+test("Cuenta corriente del ejemplo: 2800 - 130 = 2670, dos semanas = 5340", async () => {
+  const f = await fixture();
+  try {
+    for (const date of ["2026-10-19", "2026-10-26"]) {
+      for (const amount of [200, 500, 300, 400, 600, 500, 300])
+        await f.run("bank", {
+          id: randomUUID(),
+          date,
+          kind: "INCOME",
+          detail: "Cuenta corriente diario",
+          amount,
+        });
+      for (const amount of [20, 50, 60])
+        await f.run("bank", {
+          id: randomUUID(),
+          date,
+          kind: "WITHDRAWAL",
+          detail: "Disposición",
+          amount,
+        });
+    }
+    const r = await report(f.c, "2026-10-26", "2026-11-01", "week");
+    assert.equal(r.totals.bankIncome, 280000);
+    assert.equal(r.totals.bankWithdrawals, 13000);
+    assert.equal(r.totals.bankNet, 267000);
+    assert.equal(r.totals.bankAccumulated, 534000);
+  } finally {
+    await f.pg.close();
+  }
+});
 test("Gastos, deudas, apertura y entregas no multiplican la facturación", async () => {
   const f = await fixture();
   try {

@@ -50,6 +50,7 @@ const nav = [
 { id: "sales", label: "Ventas del día", icon: ShoppingBag },
 { id: "receipts", label: "Control de entrada", icon: PackagePlus },
 { id: "expenses", label: "Gastos y caja", icon: Receipt },
+{ id: "bank", label: "Cuenta corriente", icon: Landmark },
 { id: "products", label: "Lista de productos", icon: Boxes, admin: true }
 ];
 const kindLabel: Record<string, string> = {
@@ -670,7 +671,142 @@ export default function Dashboard({ user }: { user: User }) {
                   </section>
                 </>
               )}
-              
+              {view === "bank" && (
+                <>
+                  <section className="stats three">
+                    <Stat
+                      label="Ingresos del período"
+                      value={money(t.bankIncome)}
+                      icon={ArrowDownLeft}
+                      note="Ingresados por el administrador"
+                    />
+                    <Stat
+                      label="Retiros / disposición"
+                      value={money(t.bankWithdrawals)}
+                      icon={ArrowUpRight}
+                      note="Registrados con su motivo"
+                    />
+                    <Stat
+                      label="Total acumulado"
+                      value={money(t.bankAccumulated)}
+                      icon={Landmark}
+                      note="Hasta la fecha final del período"
+                      accent
+                    />
+                  </section>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <div>
+                        <h2>Cuenta corriente</h2>
+                        <p>
+                          Los retiros se registran aparte; se descuentan al
+                          consolidar.
+                        </p>
+                      </div>
+                      <div className="heading-actions">
+                        {admin && (
+                          <button
+                            className="button orange"
+                            onClick={() =>
+                              setModal({
+                                type: "bank",
+                                record: { kind: "INCOME" },
+                              })
+                            }
+                          >
+                            <Plus size={16} /> Ingreso
+                          </button>
+                        )}
+                        <button
+                          className="button secondary"
+                          onClick={() =>
+                            setModal({
+                              type: "bank",
+                              record: { kind: "WITHDRAWAL" },
+                            })
+                          }
+                        >
+                          Registrar retiro
+                        </button>
+                      </div>
+                    </div>
+                    {data.bank.length ? (
+                      <Table
+                        headers={[
+                          "Fecha",
+                          "Detalle",
+                          "Movimiento",
+                          "Monto",
+                          "Registrado por",
+                        ]}
+                      >
+                        {data.bank.map((r: any) => (
+                          <tr key={r.id}>
+                            <td>{dateLabel(r.date)}</td>
+                            <td>{r.detail}</td>
+                            <td>
+                              <span
+                                className={
+                                  "badge " +
+                                  (r.kind === "INCOME" ? "green" : "")
+                                }
+                              >
+                                {kindLabel[r.kind]}
+                              </span>
+                            </td>
+                            <td>{money(r.amount)}</td>
+                            <td>{r.user_name}</td>
+                          </tr>
+                        ))}
+                      </Table>
+                    ) : (
+                      <Empty />
+                    )}
+                  </section>
+                  <section className="panel">
+                    <div className="panel-heading">
+                      <h2>Consolidado semanal</h2>
+                      <span className="muted">
+                        Lunes a domingo · hasta 52 semanas
+                      </span>
+                    </div>
+                    {data.bankWeeks.length ? (
+                      <Table
+                        headers={[
+                          "Semana desde",
+                          "Ingresos",
+                          "Retiros",
+                          "Total semanal",
+                          "Acumulado",
+                        ]}
+                      >
+                        {data.bankWeeks.map((r: any) => (
+                          <tr key={r.week}>
+                            <td>{dateLabel(r.week)}</td>
+                            <td>{money(r.income)}</td>
+                            <td>{money(r.withdrawals)}</td>
+                            <td>
+                              <strong>
+                                {money(
+                                  Number(r.income) - Number(r.withdrawals),
+                                )}
+                              </strong>
+                            </td>
+                            <td>{money(r.accumulated)}</td>
+                          </tr>
+                        ))}
+                      </Table>
+                    ) : (
+                      <Empty />
+                    )}
+                    <p className="panel-hint">
+                      El acumulado suma los totales semanales desde el inicio.
+                      Los cobros digitales de ventas no se duplican como
+                      ingresos automáticos de cuenta corriente.
+                    </p>
+                  </section>
+                </>
+              )}
               
               {view === "products" && (
                 <>
@@ -1350,7 +1486,24 @@ function OperationModal({
                 </p>
               </>
             )}
-            
+            {type === "bank" && (
+              <>
+                <Field
+                  label={
+                    r.kind === "INCOME"
+                      ? "Detalle del ingreso"
+                      : "Motivo de retiro / disposición"
+                  }
+                  name="detail"
+                  value={r.kind === "INCOME" ? "Cuenta corriente diario" : ""}
+                />
+                <MoneyField label="Monto (S/)" name="amount" />
+                <p className="info-message">
+                  Se registrará por separado y se consolidará en la cuenta
+                  corriente semanal.
+                </p>
+              </>
+            )}
             {type === "opening" && (
               <>
                 <MoneyField
