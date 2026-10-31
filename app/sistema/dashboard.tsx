@@ -82,6 +82,7 @@ const actionLabel: Record<string, string> = {
   productStatus: "Estado de producto",
   user: "Usuario creado",
   userStatus: "Estado de usuario",
+  userDelete: "Usuario eliminado",
   resetPassword: "Contraseña restablecida",
   password: "Cambio de contraseña",
 };
@@ -1280,6 +1281,16 @@ export default function Dashboard({ user }: { user: User }) {
                               >
                                 {r.active ? "Desactivar" : "Activar"}
                               </button>
+                              {r.role === "SELLER" && (
+                                <button
+                                  className="text-button danger-text"
+                                  onClick={() =>
+                                    setModal({ type: "userDelete", record: r })
+                                  }
+                                >
+                                  Eliminar usuario
+                                </button>
+                              )}
                             </>
                           )}
                         </td>
@@ -1287,9 +1298,9 @@ export default function Dashboard({ user }: { user: User }) {
                     ))}
                   </Table>
                   <p className="panel-hint">
-                    Las cuentas desactivadas conservan su historial y siguen
-                    contando dentro del máximo de 10. El administrador crea
-                    vendedores sin registro público ni correo externo.
+                    Las cuentas desactivadas siguen contando dentro del máximo
+                    de 10. Eliminar un vendedor libera su cupo y conserva el
+                    historial de sus operaciones.
                   </p>
                 </section>
               )}
@@ -1390,7 +1401,11 @@ export default function Dashboard({ user }: { user: User }) {
             }
             setModal(null);
             setRefresh((n) => n + 1);
-            setNotice("Registro guardado correctamente.");
+            setNotice(
+              type === "userDelete"
+                ? "Usuario eliminado correctamente."
+                : "Registro guardado correctamente.",
+            );
           }}
         />
       )}
@@ -1491,6 +1506,7 @@ function OperationModal({
     product: r ? "Editar producto" : "Nuevo producto",
     user: "Crear vendedor",
     resetPassword: "Restablecer contraseña",
+    userDelete: "Eliminar usuario",
     password: forced ? "Configura tu contraseña" : "Cambiar contraseña",
   };
   useEffect(() => {
@@ -1594,6 +1610,7 @@ function OperationModal({
       };
     if (type === "resetPassword")
       body = { id: r.id, password: val("password") };
+    if (type === "userDelete") body = { id: r.id };
     try {
       const auth = type === "password";
       const resp = await fetch(auth ? "/api/auth" : "/api/operations", {
@@ -1636,9 +1653,11 @@ function OperationModal({
           <div>
             <h2 id="modal-title">{titles[type]}</h2>
             <p>
-              {type === "password"
-                ? "Usa al menos 12 caracteres. Al guardar, iniciarás sesión nuevamente."
-                : "Revisa los datos antes de guardar el registro."}
+              {type === "userDelete"
+                ? "Confirma la cuenta que deseas eliminar."
+                : type === "password"
+                  ? "Usa al menos 12 caracteres. Al guardar, iniciarás sesión nuevamente."
+                  : "Revisa los datos antes de guardar el registro."}
             </p>
           </div>
           {!forced && (
@@ -1654,9 +1673,13 @@ function OperationModal({
         </header>
         <form onSubmit={submit}>
           <div className="modal-body">
-            {!["product", "user", "resetPassword", "password"].includes(
-              type,
-            ) && (
+            {![
+              "product",
+              "user",
+              "resetPassword",
+              "password",
+              "userDelete",
+            ].includes(type) && (
               <Field
                 label="Fecha de operación"
                 name="date"
@@ -2031,6 +2054,21 @@ function OperationModal({
                 </p>
               </>
             )}
+            {type === "userDelete" && (
+              <>
+                <p>
+                  ¿Eliminar a <strong>{r.name}</strong>?
+                  <br />
+                  <span className="muted">{r.email}</span>
+                </p>
+                <p className="info-message">
+                  Se cerrarán sus sesiones y ya no podrá iniciar sesión. La
+                  cuenta desaparecerá de esta lista y liberará un cupo. Sus
+                  ventas y demás operaciones se conservarán en el historial.
+                  Para darle acceso nuevamente deberás crear una cuenta nueva.
+                </p>
+              </>
+            )}
             {type === "resetPassword" && (
               <>
                 <p>
@@ -2077,12 +2115,21 @@ function OperationModal({
                 Cancelar
               </button>
             )}
-            <button className="button orange" disabled={busy}>
+            <button
+              className={
+                "button " + (type === "userDelete" ? "danger" : "orange")
+              }
+              disabled={busy}
+            >
               {busy
-                ? "Guardando…"
-                : type === "password"
-                  ? "Cambiar contraseña"
-                  : "Guardar registro"}
+                ? type === "userDelete"
+                  ? "Eliminando…"
+                  : "Guardando…"
+                : type === "userDelete"
+                  ? "Eliminar usuario"
+                  : type === "password"
+                    ? "Cambiar contraseña"
+                    : "Guardar registro"}
             </button>
           </footer>
         </form>

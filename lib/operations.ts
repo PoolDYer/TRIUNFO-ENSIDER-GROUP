@@ -243,7 +243,9 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       .object({ name: detail, email: emailSchema, password: passwordSchema })
       .parse(input);
     await c.query("LOCK TABLE users IN EXCLUSIVE MODE");
-    const { rows } = await c.query("SELECT count(*)::int AS count FROM users");
+    const { rows } = await c.query(
+      "SELECT count(*)::int AS count FROM users WHERE deleted_at IS NULL",
+    );
     if (rows[0].count >= 10)
       throw new AppError("Se alcanzó el máximo de 10 usuarios.");
     entity = randomUUID();
@@ -251,15 +253,40 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,$2,$3,$4,'SELLER')",
       [entity, p.name, p.email, await hashPassword(p.password)],
     );
+  } else if (action === "userDelete") {
+    admin(u);
+    const p = z.object({ id }).parse(input);
+    if (p.id === u.id)
+      throw new AppError("No puedes eliminar tu propia cuenta.");
+    // Serialize deletion with account creation so the capacity remains consistent.
+    await c.query("LOCK TABLE users IN EXCLUSIVE MODE");
+    const { rows } = await c.query(
+      "SELECT id,role FROM users WHERE id=$1 AND deleted_at IS NULL FOR UPDATE",
+      [p.id],
+    );
+    if (!rows.length) throw new AppError("El usuario ya no existe.", 404);
+    if (rows[0].role !== "SELLER")
+      throw new AppError(
+        "No se puede eliminar una cuenta de administrador.",
+        403,
+      );
+    await c.query(
+      "UPDATE users SET active=false,deleted_at=now() WHERE id=$1",
+      [p.id],
+    );
+    await c.query("DELETE FROM sessions WHERE user_id=$1", [p.id]);
+    entity = p.id;
   } else if (action === "userStatus") {
     admin(u);
     const p = z.object({ id, active: z.boolean() }).parse(input);
     if (p.id === u.id)
       throw new AppError("No puedes desactivar tu propia cuenta.");
-    await c.query("UPDATE users SET active=$2 WHERE id=$1 AND role='SELLER'", [
-      p.id,
-      p.active,
-    ]);
+    const result = await c.query(
+      "UPDATE users SET active=$2 WHERE id=$1 AND role='SELLER' AND deleted_at IS NULL RETURNING id",
+      [p.id, p.active],
+    );
+    if (!result.rows.length)
+      throw new AppError("El vendedor ya no existe.", 404);
     await c.query("DELETE FROM sessions WHERE user_id=$1", [p.id]);
     entity = p.id;
   } else if (action === "resetPassword") {
@@ -267,10 +294,12 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
     const p = z.object({ id, password: passwordSchema }).parse(input);
     if (p.id === u.id)
       throw new AppError("Usa Cambiar contraseña para tu propia cuenta.");
-    await c.query(
-      "UPDATE users SET password_hash=$2,must_change_password=true WHERE id=$1",
+    const result = await c.query(
+      "UPDATE users SET password_hash=$2,must_change_password=true WHERE id=$1 AND role='SELLER' AND deleted_at IS NULL RETURNING id",
       [p.id, await hashPassword(p.password)],
     );
+    if (!result.rows.length)
+      throw new AppError("El vendedor ya no existe.", 404);
     await c.query("DELETE FROM sessions WHERE user_id=$1", [p.id]);
     entity = p.id;
   } else throw new AppError("Operación no reconocida.");

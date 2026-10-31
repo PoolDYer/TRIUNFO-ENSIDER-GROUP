@@ -60,6 +60,180 @@ const sale = (productId: string, quantity = 1) => ({
   method: "NONE",
   reference: "",
 });
+
+test("Eliminar un vendedor cierra sesiones, preserva ventas y permite reutilizar su correo", async () => {
+  const f = await fixture();
+  try {
+    const sellerId = randomUUID();
+    await f.c.query(
+      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Vendedor','nuevo@triunfoensidergroup','unused','SELLER')",
+      [sellerId],
+    );
+    await f.c.query(
+      "INSERT INTO sessions(token_hash,user_id,expires_at) VALUES('test-session',$1,now()+interval '1 hour')",
+      [sellerId],
+    );
+    await f.run("sale", sale(f.productId), {
+      ...f.user,
+      id: sellerId,
+      role: "SELLER",
+    });
+    await f.run("userDelete", { id: sellerId });
+    const deleted = (
+      await f.c.query("SELECT active,deleted_at FROM users WHERE id=$1", [
+        sellerId,
+      ])
+    ).rows[0];
+    assert.equal(deleted.active, false);
+    assert.ok(deleted.deleted_at);
+    assert.equal(
+      (
+        await f.c.query(
+          "SELECT count(*)::int AS n FROM sessions WHERE user_id=$1",
+          [sellerId],
+        )
+      ).rows[0].n,
+      0,
+    );
+    assert.equal(
+      (
+        await f.c.query(
+          "SELECT s.user_id,u.name FROM sales s JOIN users u ON u.id=s.user_id",
+        )
+      ).rows[0].name,
+      "Vendedor",
+    );
+    assert.equal(
+      (await report(f.c, "2026-10-30", "2026-10-30", "day")).totals.billing,
+      1000,
+    );
+    assert.equal(
+      (
+        await f.c.query(
+          "SELECT count(*)::int AS n FROM audit_log WHERE action='userDelete' AND entity_id=$1",
+          [sellerId],
+        )
+      ).rows[0].n,
+      1,
+    );
+    await f.run("user", {
+      name: "Nuevo vendedor",
+      email: "nuevo@triunfoensidergroup",
+      password: "Temporary-12345",
+    });
+    assert.equal(
+      (
+        await f.c.query(
+          "SELECT count(*)::int AS n FROM users WHERE email='nuevo@triunfoensidergroup' AND deleted_at IS NULL",
+        )
+      ).rows[0].n,
+      1,
+    );
+    await assert.rejects(f.run("userDelete", { id: sellerId }), /ya no existe/);
+    await assert.rejects(
+      f.run("userStatus", { id: sellerId, active: true }),
+      /ya no existe/,
+    );
+    await assert.rejects(
+      f.run("resetPassword", { id: sellerId, password: "Temporary-12345" }),
+      /ya no existe/,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});
+
+test("Solo el administrador puede eliminar vendedores y no puede eliminar administradores", async () => {
+  const f = await fixture();
+  try {
+    await assert.rejects(
+      f.run("userDelete", { id: f.user.id }),
+      /propia cuenta/,
+    );
+    await assert.rejects(
+      f.run("userDelete", { id: randomUUID() }, { ...f.user, role: "SELLER" }),
+      /administrador/,
+    );
+    const otherAdmin = randomUUID();
+    await f.c.query(
+      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Otro admin','otro@triunfoensidergroup','unused','ADMIN')",
+      [otherAdmin],
+    );
+    await assert.rejects(
+      f.run("userDelete", { id: otherAdmin }),
+      /cuenta de administrador/,
+    );
+    await assert.rejects(
+      f.run("userDelete", { id: randomUUID() }),
+      /ya no existe/,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});
+
+test("Eliminar un vendedor libera un cupo cuando ya existen diez cuentas", async () => {
+  const f = await fixture();
+  try {
+    await f.c.query(
+      "INSERT INTO users(id,name,email,password_hash,role) SELECT gen_random_uuid(),'Vendedor','v'||n||'@triunfoensidergroup','unused','SELLER' FROM generate_series(1,9) n",
+    );
+    const sellerId = (
+      await f.c.query("SELECT id FROM users WHERE role='SELLER' LIMIT 1")
+    ).rows[0].id;
+    await assert.rejects(
+      f.run("user", {
+        name: "Nuevo",
+        email: "ultimo@triunfoensidergroup",
+        password: "Temporary-12345",
+      }),
+      /máximo/,
+    );
+    await f.run("userDelete", { id: sellerId });
+    await f.run("user", {
+      name: "Nuevo",
+      email: "ultimo@triunfoensidergroup",
+      password: "Temporary-12345",
+    });
+    assert.equal(
+      (
+        await f.c.query(
+          "SELECT count(*)::int AS n FROM users WHERE deleted_at IS NULL",
+        )
+      ).rows[0].n,
+      10,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});
+
+test("La migración conserva los usuarios existentes y se puede repetir", async () => {
+  const pg = new PGlite();
+  try {
+    await pg.exec(
+      "CREATE TABLE users (id uuid PRIMARY KEY,name text NOT NULL,email text UNIQUE NOT NULL,password_hash text NOT NULL,role text NOT NULL,active boolean NOT NULL DEFAULT true,must_change_password boolean NOT NULL DEFAULT true,created_at timestamptz NOT NULL DEFAULT now())",
+    );
+    const id = randomUUID();
+    await pg.query(
+      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Administrador','admin@triunfoensidergroup','preservar','ADMIN')",
+      [id],
+    );
+    await pg.exec(schema);
+    await pg.exec(schema);
+    const user = (
+      await pg.query(
+        "SELECT id,password_hash,deleted_at FROM users WHERE id=$1",
+        [id],
+      )
+    ).rows[0] as any;
+    assert.equal(user.id, id);
+    assert.equal(user.password_hash, "preservar");
+    assert.equal(user.deleted_at, null);
+  } finally {
+    await pg.close();
+  }
+});
 test("Origen valida el Host externo incluso detrás del proxy de Next", () => {
   assert.doesNotThrow(() =>
     checkOrigin(

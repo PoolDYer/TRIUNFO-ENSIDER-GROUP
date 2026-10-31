@@ -1,10 +1,13 @@
 export const schema = `
 CREATE TABLE IF NOT EXISTS users (
- id uuid PRIMARY KEY, name text NOT NULL, email text UNIQUE NOT NULL,
+ id uuid PRIMARY KEY, name text NOT NULL, email text NOT NULL,
  password_hash text NOT NULL, role text NOT NULL CHECK(role IN ('ADMIN','SELLER')),
  active boolean NOT NULL DEFAULT true, must_change_password boolean NOT NULL DEFAULT true,
- created_at timestamptz NOT NULL DEFAULT now()
+ created_at timestamptz NOT NULL DEFAULT now(), deleted_at timestamptz
 );
+ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS users_current_email_idx ON users(email) WHERE deleted_at IS NULL;
 CREATE TABLE IF NOT EXISTS sessions (
  token_hash text PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id),
  expires_at timestamptz NOT NULL

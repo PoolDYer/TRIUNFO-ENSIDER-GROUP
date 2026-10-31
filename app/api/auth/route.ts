@@ -63,9 +63,10 @@ export async function POST(req: Request) {
         "Demasiados intentos. Espera 15 minutos e inténtalo otra vez.",
         429,
       );
-    const { rows } = await db.query("SELECT * FROM users WHERE email=$1", [
-      v.email,
-    ]);
+    const { rows } = await db.query(
+      "SELECT * FROM users WHERE email=$1 AND deleted_at IS NULL",
+      [v.email],
+    );
     const u = rows[0];
     const valid = await verifyPassword(v.password, u?.password_hash ?? dummy);
     if (!u || !valid || !u.active)

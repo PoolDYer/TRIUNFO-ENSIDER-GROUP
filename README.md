@@ -5,7 +5,7 @@ Sistema web administrativo de inventario, ventas y caja, preparado para Vercel c
 ## Funciones implementadas
 
 - Presentación de la comercializadora y acceso al sistema con el logo original.
-- Un administrador y tres vendedores iniciales. El administrador puede crear vendedores hasta un máximo de diez cuentas, desactivar cuentas y restablecer contraseñas.
+- Un administrador y tres vendedores iniciales. El administrador puede crear vendedores hasta un máximo de diez cuentas, desactivar cuentas, restablecer contraseñas y eliminar vendedores con confirmación. La eliminación cierra sus sesiones, libera el cupo y conserva el historial de sus operaciones. No se permite eliminar al administrador.
 - Correos internos con el formato exacto `usuario@triunfoensidergroup`. No necesitan buzón ni DNS; son identificadores internos.
 - Cambio obligatorio de contraseña temporal, contraseñas con scrypt y salt, sesiones revocables de ocho horas en cookies HttpOnly/SameSite y Secure en producción. Límite persistente de diez intentos de acceso por cuenta en quince minutos.
 - Venta de varios productos, cantidades y precios ingresados manualmente, subtotales automáticos, pago combinado efectivo/Yape/transferencia y deuda pendiente de cobro. Código de operación digital, detalle, fecha, hora de registro y usuario responsable.
@@ -38,6 +38,8 @@ npm run dev
 Abrir `http://127.0.0.1:3000`. Las credenciales locales generadas están en `.work/accesos-locales.txt`, excluidas del repositorio. Si se clona el repositorio en otra máquina, crear `.env.local` con `LOCAL_DATABASE=true` y las cuatro variables `INITIAL_*_PASSWORD` del ejemplo, usando contraseñas diferentes de al menos doce caracteres.
 
 No ejecutar dos procesos que abran el mismo directorio PGlite simultáneamente: detener el servidor antes de ejecutar `db:setup`. En producción se usa PostgreSQL real con conexiones independientes.
+
+Al actualizar una instalación existente, ejecutar `npm run db:setup` antes de iniciar la nueva versión. La preparación aplica también la migración para eliminar vendedores conservando sus operaciones: añade la fecha de eliminación y permite reutilizar el correo en una cuenta nueva. No cambia las contraseñas ni los datos existentes.
 
 ## Preparación y despliegue en Vercel
 
@@ -96,7 +98,7 @@ npm run build
 npm audit --omit=dev
 ```
 
-Catorce pruebas de negocio cubren fórmulas del Excel, fechas, contraseñas, ventas transaccionales, reversión, historial de precios, duplicados, pagos inválidos, permisos, entradas, cuenta corriente, gastos, caja y máximo de cuentas. Incluyen diez intentos simultáneos de venta sobre stock limitado. Estas pruebas usan un motor PostgreSQL embebido y no sustituyen una prueba con múltiples conexiones PostgreSQL reales.
+Las pruebas de negocio cubren fórmulas del Excel, fechas, contraseñas, ventas transaccionales, reversión, historial de precios, duplicados, pagos inválidos, permisos, entradas, cuenta corriente, gastos, caja, máximo de cuentas y eliminación de vendedores con conservación del historial. Incluyen diez intentos simultáneos de venta sobre stock limitado. Estas pruebas usan un motor PostgreSQL embebido y no sustituyen una prueba con múltiples conexiones PostgreSQL reales.
 
 Se verificaron además por HTTP los flujos de autenticación, revocación, permisos de API, importación, ventas y reportes, origen de solicitudes y CSV; diez consultas simultáneas funcionaron en desarrollo local. Se revisó en navegador el panel, el registro de ventas y la actualización de existencias.
 

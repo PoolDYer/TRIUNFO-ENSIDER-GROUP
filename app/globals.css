@@ -1243,6 +1243,16 @@ tr:last-child td {
   font-size: 23px;
   letter-spacing: -0.5px;
 }
+.danger {
+  background: #b43d32;
+  color: white;
+}
+.danger:hover {
+  background: #963128;
+}
+.danger-text {
+  color: #b43d32;
+}
 .email-access-field {
   display: flex;
   align-items: stretch;

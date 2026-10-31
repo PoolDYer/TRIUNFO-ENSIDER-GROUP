@@ -31,7 +31,7 @@ export async function GET(req: Request) {
         {
           users: (
             await db.query(
-              "SELECT id,name,email,role,active,must_change_password FROM users ORDER BY role,name",
+              "SELECT id,name,email,role,active,must_change_password FROM users WHERE deleted_at IS NULL ORDER BY role,name",
             )
           ).rows,
         },

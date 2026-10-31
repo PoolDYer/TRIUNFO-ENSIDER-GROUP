@@ -20,7 +20,7 @@ export async function currentUser(): Promise<User | null> {
   const token = (await cookies()).get("triunfo_session")?.value;
   if (!token) return null;
   const { rows } = await db.query(
-    `SELECT u.id,u.name,u.email,u.role,u.must_change_password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND u.active=true`,
+    `SELECT u.id,u.name,u.email,u.role,u.must_change_password FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.expires_at>now() AND u.active=true AND u.deleted_at IS NULL`,
     [tokenHash(token)],
   );
   return rows[0] ?? null;
