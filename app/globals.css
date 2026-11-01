@@ -1781,3 +1781,49 @@ td small {
     font-size: 10px;
   }
 }
+
+.google-help {
+  max-width: 860px;
+  margin: 50px auto;
+  padding: 32px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  line-height: 1.8;
+  font-size: 15px;
+}
+.google-help h1 {
+  font-size: 30px;
+  margin-top: 25px;
+}
+.google-help li {
+  margin-bottom: 18px;
+  padding-left: 6px;
+}
+.google-help code {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  background: #f4f5f7;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+.google-help a:not(.button) {
+  color: #a95317;
+  text-decoration: underline;
+}
+.google-help ol {
+  padding-left: 22px;
+}
+.back-link-static {
+  font-size: 13px;
+}
+@media (max-width: 760px) {
+  .google-help {
+    margin: 15px;
+    padding: 22px;
+    font-size: 14px;
+  }
+  .google-help h1 {
+    font-size: 25px;
+  }
+}

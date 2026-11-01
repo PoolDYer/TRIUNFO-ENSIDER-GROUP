@@ -15,7 +15,6 @@ import {
   Plus,
   ArrowUpRight,
   ArrowDownLeft,
-  Download,
   Search,
   X,
   Menu,
@@ -29,6 +28,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { User } from "@/lib/auth";
+import GoogleSheetsExport from "./google-sheets-export";
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
     Number(v ?? 0) / 100,
@@ -85,6 +85,8 @@ const actionLabel: Record<string, string> = {
   userDelete: "Usuario eliminado",
   resetPassword: "Contraseña restablecida",
   password: "Cambio de contraseña",
+  googleConnect: "Conexión con Google Sheets",
+  googleExport: "Reporte generado en Google Sheets",
 };
 type Product = {
   id: string;
@@ -259,6 +261,29 @@ export default function Dashboard({ user }: { user: User }) {
     return () => controller.abort();
   }, [view, date, period, refresh, user.must_change_password]);
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("google");
+    if (!result) return;
+    if (result === "connected")
+      setNotice(
+        "Google Sheets conectado. Ya puedes generar enlaces a tus reportes.",
+      );
+    else
+      setError(
+        result === "denied"
+          ? "No se autorizó la conexión con Google."
+          : result === "expired"
+            ? "La solicitud para conectar Google venció. Inicia la conexión nuevamente."
+            : "No se pudo conectar Google. Revisa la configuración y vuelve a intentarlo.",
+      );
+    params.delete("google");
+    window.history.replaceState(
+      null,
+      "",
+      "/sistema" + (params.size ? "?" + params.toString() : ""),
+    );
+  }, []);
+  useEffect(() => {
     if (!notice) return;
     const t = setTimeout(() => setNotice(""), 5000);
     return () => clearTimeout(t);
@@ -294,7 +319,6 @@ export default function Dashboard({ user }: { user: User }) {
     (p.name + " " + p.code).toLowerCase().includes(search.toLowerCase()),
   );
   const low = products.filter((p) => p.stock <= p.min_stock);
-  const exportUrl = `/api/data?view=reports&date=${date}&period=${period}&export=csv`;
   return (
     <div className="app-shell">
       <aside className={"sidebar " + (mobile ? "open" : "")}>
@@ -415,9 +439,12 @@ export default function Dashboard({ user }: { user: User }) {
             </div>
             <div className="heading-actions">
               {!isSpecial && (
-                <a className="button secondary" href={exportUrl}>
-                  <Download size={16} /> Exportar
-                </a>
+                <GoogleSheetsExport
+                  date={date}
+                  period={period}
+                  admin={admin}
+                  disabled={user.must_change_password || loading}
+                />
               )}
               {["overview", "sales"].includes(view) && (
                 <button

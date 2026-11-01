@@ -64,6 +64,19 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE TABLE IF NOT EXISTS initial_reference (
  id text PRIMARY KEY, source text NOT NULL, data jsonb NOT NULL
 );
+CREATE TABLE IF NOT EXISTS google_connection (
+ id integer PRIMARY KEY CHECK(id=1), refresh_token_encrypted text NOT NULL,
+ client_id text NOT NULL, connected_by uuid NOT NULL REFERENCES users(id),
+ connected_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS google_exports (
+ id uuid PRIMARY KEY, user_id uuid NOT NULL REFERENCES users(id), date date NOT NULL,
+ period text NOT NULL CHECK(period IN ('day','week','month')),
+ status text NOT NULL CHECK(status IN ('PENDING','READY','FAILED')),
+ spreadsheet_id text, spreadsheet_url text,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS google_exports_user_idx ON google_exports(user_id,created_at);
 CREATE INDEX IF NOT EXISTS sales_date_idx ON sales(date);
 CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items(sale_id);
 CREATE INDEX IF NOT EXISTS expenses_date_idx ON expenses(date);

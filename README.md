@@ -1,6 +1,6 @@
 # Triunfo Ensider Group
 
-Sistema web administrativo de inventario, ventas y caja, preparado para Vercel con Next.js, TypeScript y PostgreSQL. Autenticación propia con correo y contraseña, sin OAuth, proveedores de identidad ni envío de correos.
+Sistema web administrativo de inventario, ventas y caja, preparado para Vercel con Next.js, TypeScript y PostgreSQL. Autenticación propia con correo y contraseña, sin proveedores externos de identidad ni envío de correos. La exportación a Google Sheets usa una conexión OAuth independiente, autorizada por el administrador.
 
 ## Funciones implementadas
 
@@ -13,7 +13,7 @@ Sistema web administrativo de inventario, ventas y caja, preparado para Vercel c
 - Entradas con proveedor, cantidad, fecha, costo del pedido, modalidad contado/crédito, monto pagado y saldo.
 - Gastos operativos y fijos con descripción, fecha, monto y usuario. Apertura física de caja única por fecha. Deudas manuales, depósitos y efectivo entregado.
 - Cuenta corriente con ingresos manuales exclusivos del administrador, retiros con motivo, consolidación semanal y acumulado histórico.
-- Inventarios y reportes diarios, semanales y mensuales, cantidades vendidas por producto y precio histórico, ingresos, egresos y caja. Exportación CSV compatible con Excel e impresión.
+- Inventarios y reportes diarios, semanales y mensuales, cantidades vendidas por producto y precio histórico, ingresos, egresos y caja. Generación de enlaces a reportes en Google Sheets e impresión.
 - Lista de productos exclusiva del administrador: stock, precio de venta, costo de compra, capital, inversión y ganancia potencial. Los vendedores disponen solo del selector operativo necesario para vender y registrar entradas, sin costos ni rentabilidad del catálogo.
 - Auditoría de las operaciones y conservación de las entradas/ventas del Excel original como referencia.
 
@@ -47,7 +47,7 @@ Al actualizar una instalación existente, ejecutar `npm run db:setup` antes de i
 2. En una terminal local, configurar `DATABASE_URL` y `LOCAL_DATABASE=false`. Si existe `.env.local`, quitar de allí la configuración local o usar una copia con los valores de producción. Las variables ya presentes en el entorno tienen prioridad.
 3. Definir cuatro contraseñas temporales distintas: `INITIAL_ADMIN_PASSWORD`, `INITIAL_SELLER_1_PASSWORD`, `INITIAL_SELLER_2_PASSWORD`, `INITIAL_SELLER_3_PASSWORD`. Mínimo doce caracteres. Ejecutar `npm run db:setup` una sola vez para preparar las tablas e importar el inventario. El proceso es transaccional e idempotente: repetirlo no reemplaza contraseñas, stock ni registros existentes.
 4. Importar el repositorio `PoolDYer/TRIUNFO-ENSIDER-GROUP` en Vercel. Seleccionar Next.js, raíz del repositorio, instalación `npm ci`, construcción `npm run build`, Node.js 22 o 24.
-5. En Vercel configurar únicamente `DATABASE_URL`, `LOCAL_DATABASE=false` y, opcionalmente, `APP_URL` con el origen HTTPS definitivo. No habilitar la base local. Las cuatro contraseñas de inicialización no son necesarias en el despliegue después de preparar la base.
+5. En Vercel configurar `DATABASE_URL`, `LOCAL_DATABASE=false` y, opcionalmente, `APP_URL` con el origen HTTPS definitivo. Para Google Sheets, añadir las cuatro variables `GOOGLE_*` descritas más abajo. No habilitar la base local. Las cuatro contraseñas de inicialización no son necesarias en el despliegue después de preparar la base.
 6. Ubicar funciones y base en regiones cercanas. Desplegar e ingresar con las cuentas iniciales. Cada usuario deberá cambiar su contraseña antes de operar. El administrador puede recuperar el acceso de los vendedores desde Usuarios.
 7. Ejecutar las pruebas de acceso y carga sobre el despliegue con la base definitiva. Activar las copias de seguridad del proveedor antes de comenzar a registrar operaciones reales.
 
@@ -100,7 +100,7 @@ npm audit --omit=dev
 
 Las pruebas de negocio cubren fórmulas del Excel, fechas, contraseñas, ventas transaccionales, reversión, historial de precios, duplicados, pagos inválidos, permisos, entradas, cuenta corriente, gastos, caja, máximo de cuentas y eliminación de vendedores con conservación del historial. Incluyen diez intentos simultáneos de venta sobre stock limitado. Estas pruebas usan un motor PostgreSQL embebido y no sustituyen una prueba con múltiples conexiones PostgreSQL reales.
 
-Se verificaron además por HTTP los flujos de autenticación, revocación, permisos de API, importación, ventas y reportes, origen de solicitudes y CSV; diez consultas simultáneas funcionaron en desarrollo local. Se revisó en navegador el panel, el registro de ventas y la actualización de existencias.
+Se verificaron además por HTTP los flujos de autenticación, revocación, permisos de API, importación, ventas y reportes, origen de solicitudes y exportaciones; diez consultas simultáneas funcionaron en desarrollo local. Se revisó en navegador el panel, el registro de ventas y la actualización de existencias.
 
 ### Carga con usuarios reales en el despliegue
 
@@ -113,3 +113,39 @@ node scripts/load-test.mjs
 ```
 
 Ejecuta diez rondas de consultas simultáneas, informa errores y latencias P50/P95 y cierra sus sesiones. No modifica inventario ni caja. Comparar los resultados con métricas de Vercel y conexiones de la base antes de concluir que el despliegue soporta diez usuarios. Las pruebas locales no garantizan disponibilidad, tiempos de respuesta ni límites de un plan específico.
+
+## Configurar los enlaces a Google Sheets
+
+El botón «Generar enlace a Google Sheets» sustituye la descarga CSV. Crea una copia del reporte del período seleccionado, con tres pestañas: Resumen financiero, Productos vendidos y Ventas por día. La hoja contiene importes numéricos con formato de soles, fechas y texto literal, sin ejecutar nombres de productos como fórmulas. La generación se audita y una solicitud repetida no vuelve a crear la misma hoja.
+
+La aplicación está implementada, pero la creación de hojas reales requiere configurar un proyecto propio de Google y autorizar la cuenta del administrador. No se incluyen credenciales de Google en el repositorio. La ayuda está disponible dentro del sistema, para el administrador, en `/ayuda/google-sheets`.
+
+1. Entrar en [Google Cloud Console](https://console.cloud.google.com/) con la cuenta del administrador y crear o seleccionar un proyecto.
+2. En APIs y servicios, habilitar **Google Sheets API**.
+3. En Google Auth Platform, configurar la aplicación, sus datos de contacto y audiencia. Con cuenta personal, seleccionar audiencia externa; en modo de prueba, añadir el correo Google del administrador como usuario de prueba.
+4. Crear un cliente OAuth de tipo **Aplicación web**. Registrar exactamente `http://127.0.0.1:3000/api/google/callback` para desarrollo. Registrar también `https://TU-DOMINIO/api/google/callback` cuando exista el dominio definitivo en Vercel. Las direcciones localhost y 127.0.0.1 son diferentes: usar el mismo origen al abrir el sistema y al configurar el retorno.
+5. Guardar el identificador y secreto del cliente en `.env.local` para desarrollo, o en las variables de Vercel para producción. No pegarlos en chats ni subir archivos de credenciales a Git.
+
+```dotenv
+GOOGLE_CLIENT_ID=identificador-del-cliente.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=secreto-del-cliente
+GOOGLE_REDIRECT_URI=http://127.0.0.1:3000/api/google/callback
+GOOGLE_TOKEN_ENCRYPTION_KEY=clave-base64-de-32-bytes
+```
+
+Para generar la clave de cifrado, ejecutar localmente el siguiente comando y guardar su resultado como `GOOGLE_TOKEN_ENCRYPTION_KEY`. Mantener la misma clave entre reinicios y despliegues; si se pierde o cambia, será necesario volver a conectar Google. En esta instalación local ya se generó y guardó una clave privada en `.env.local`.
+
+```powershell
+node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+6. Con el servidor local detenido, ejecutar `npm run db:setup` para añadir las tablas de conexión y reportes; volver a iniciar el servidor. La migración no modifica inventario, cuentas ni contraseñas.
+7. Entrar como administrador. Abrir «Generar enlace a Google Sheets», pulsar **Conectar Google** y autorizar la cuenta donde se guardarán los reportes. Después seleccionar el período y pulsar **Generar enlace**.
+
+El permiso solicitado es `drive.file`, limitado a archivos creados o utilizados con la aplicación. La biblioteca oficial de Google gestiona OAuth y la renovación del acceso; se comprueban estado, sesión, vencimiento y PKCE. El token de renovación se cifra con AES-256-GCM antes de almacenarlo y nunca se envía al navegador. No se guarda ninguna contraseña de Google.
+
+Las hojas se crean con los permisos predeterminados de la cuenta conectada y no se hacen públicas automáticamente. Para que un vendedor pueda abrir el enlace, el administrador debe compartirlo desde Google Sheets con su cuenta de Google real. Los correos internos `@triunfoensidergroup` no son cuentas Google. Generar un enlace no equivale a conceder acceso público ni a mantener el reporte sincronizado. El catálogo de compra e inversión exclusivo del administrador no se incluye en estas exportaciones.
+
+En modo de prueba de Google, la autorización offline puede vencer a los siete días; revisar el estado de publicación y los requisitos de Google para usar la conexión de manera estable. Ante una autorización revocada o vencida, el administrador puede conectar nuevamente la cuenta desde el mismo botón. Si Google no confirma la creación por un corte de red, revisar la cuenta conectada antes de iniciar una solicitud nueva.
+
+Las pruebas automatizadas validan datos, cifrado, estados OAuth, errores, permisos por solicitud y duplicados usando respuestas simuladas de Google. La prueba con una cuenta real queda pendiente hasta configurar el cliente OAuth y autorizarlo. Referencias oficiales: [creación de hojas](https://developers.google.com/workspace/sheets/api/guides/create), [OAuth para servidores](https://developers.google.com/identity/protocols/oauth2/web-server), [permisos](https://developers.google.com/workspace/sheets/api/scopes).
