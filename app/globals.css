@@ -1080,12 +1080,23 @@ tr:last-child td {
   gap: 15px;
   padding: 14px 0;
   border-top: 1px solid #eef0f3;
-  font-size: 12px;
-  color: #8a929d;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #475569;
 }
 .report-ledger strong {
-  color: #596472;
-  font-weight: 550;
+  color: #26313f;
+  font-size: 18px;
+  font-weight: 650;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.panel:has(.report-ledger) .panel-heading h2 {
+  font-size: 20px;
+}
+.panel:has(.report-ledger) .panel-hint {
+  font-size: 14px;
+  line-height: 1.6;
 }
 .toast {
   position: fixed;
