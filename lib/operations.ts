@@ -12,6 +12,7 @@ import {
   quantitySchema,
 } from "./validation";
 import { hashPassword } from "./password";
+import { financingInterest } from "./financing";
 const detail = z.string().trim().min(1).max(500);
 const id = z.string().uuid();
 const base = { id, date: dateSchema };
@@ -116,8 +117,12 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
         orderCost: moneySchema,
         paid: moneySchema,
         modality: z.enum(["CASH", "CREDIT"]),
+        creditPrincipal: positiveMoney.optional(),
+        interestPercent: moneySchema.refine(v => v <= 100, "El interés debe estar entre 0 y 100 %").default(2),
       })
       .parse(input);
+    if (p.modality === "CREDIT" && p.creditPrincipal === undefined)
+      throw new AppError("Indica el monto a crédito.");
     if (
       p.paid > p.orderCost ||
       (p.modality === "CASH" && p.paid !== p.orderCost)
@@ -144,6 +149,9 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
         u.id,
       ],
     );
+    if (p.modality === "CREDIT")
+      await c.query("UPDATE receipts SET credit_principal=$2,interest_bps=$3 WHERE id=$1",
+        [p.id,cents(p.creditPrincipal!),cents(p.interestPercent)]);
     entity = p.id;
   } else if (
     action === "expense" ||

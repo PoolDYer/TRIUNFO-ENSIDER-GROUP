@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import type { User } from "@/lib/auth";
 import GoogleSheetsExport from "./google-sheets-export";
+import CreditFields from "./credit-fields";
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
     Number(v ?? 0) / 100,
@@ -1610,6 +1611,7 @@ function OperationModal({
         orderCost: num("orderCost"),
         paid: num("paid"),
         modality: val("modality"),
+        ...(val("modality") === "CREDIT" ? { creditPrincipal: num("creditPrincipal"), interestPercent: num("interestPercent") } : {}),
       };
     if (["expense", "treasury", "bank"].includes(type))
       body = {
@@ -1910,18 +1912,11 @@ function OperationModal({
                     value={1}
                   />
                   <MoneyField label="Costo del pedido (S/)" name="orderCost" />
-                  <label>
-                    Modalidad
-                    <select name="modality">
-                      <option value="CASH">Al contado</option>
-                      <option value="CREDIT">Al crédito</option>
-                    </select>
-                  </label>
+                  <CreditFields />
                   <MoneyField label="Monto pagado (S/)" name="paid" />
                 </div>
                 <p className="info-message">
-                  El saldo será costo del pedido menos monto pagado. Registra
-                  aparte cualquier gasto pagado desde caja.
+                  El monto pagado corresponde al pedido. El monto a crédito es el capital financiado y genera su propia deuda con interés único; sus abonos se registran en Financiamiento → Pagos. Registra aparte cualquier gasto pagado desde caja.
                 </p>
               </>
             )}

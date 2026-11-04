@@ -8,6 +8,7 @@
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "next typegen && tsc --noEmit",
     "db:setup": "tsx scripts/setup.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
     "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {

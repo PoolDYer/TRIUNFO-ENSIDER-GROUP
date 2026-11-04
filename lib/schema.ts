@@ -85,4 +85,15 @@ CREATE INDEX IF NOT EXISTS treasury_date_idx ON treasury(date);
 CREATE INDEX IF NOT EXISTS receipts_date_idx ON receipts(date);
 CREATE INDEX IF NOT EXISTS audit_date_idx ON audit_log(created_at);
 CREATE INDEX IF NOT EXISTS sessions_user_idx ON sessions(user_id);
+ALTER TABLE receipts ADD COLUMN IF NOT EXISTS credit_principal bigint CHECK(credit_principal >= 0);
+ALTER TABLE receipts ADD COLUMN IF NOT EXISTS interest_bps integer NOT NULL DEFAULT 0 CHECK(interest_bps BETWEEN 0 AND 10000);
+-- Historical credit entries preserve their original outstanding amount without invented interest.
+UPDATE receipts SET credit_principal=order_cost-paid WHERE modality='CREDIT' AND credit_principal IS NULL;
+CREATE TABLE IF NOT EXISTS financing_payments (
+ id uuid PRIMARY KEY, receipt_id uuid NOT NULL REFERENCES receipts(id), date date NOT NULL,
+ amount bigint NOT NULL CHECK(amount > 0), detail text NOT NULL DEFAULT '',
+ user_id uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS financing_payments_receipt_idx ON financing_payments(receipt_id,date);
+CREATE INDEX IF NOT EXISTS financing_payments_date_idx ON financing_payments(date);
 `;

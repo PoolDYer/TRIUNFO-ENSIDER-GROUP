@@ -427,6 +427,7 @@ test("Entradas suman stock y validan el saldo al contado y crédito", async () =
       orderCost: 100,
       paid: 40,
       modality: "CREDIT",
+      creditPrincipal: 60,
     };
     await f.run("receipt", input);
     assert.equal(
