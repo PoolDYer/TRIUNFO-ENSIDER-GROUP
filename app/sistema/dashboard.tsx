@@ -31,6 +31,7 @@ import type { User } from "@/lib/auth";
 import GoogleSheetsExport from "./google-sheets-export";
 import Financing from "./financing";
 import ReceiptFields from "./receipt-fields";
+const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
     Number(v ?? 0) / 100,
@@ -188,8 +189,12 @@ function Field({
       <input
         name={name}
         type={type}
-        defaultValue={value}
-        required={required}
+        defaultValue={type === "number" && Number(value) === 0 ? "" : value}
+        required={required && !(type === "number" && min === "0" && Number(value) === 0)}
+        onChange={type === "number" ? (e) => {
+          const clean = numericText(e.currentTarget.value);
+          if (clean !== e.currentTarget.value) e.currentTarget.value = clean;
+        } : undefined}
         step={step}
         min={min}
         max={max}
@@ -1519,10 +1524,10 @@ function OperationModal({
     [error, setError] = useState("");
   const [id] = useState(() => crypto.randomUUID());
   const [items, setItems] = useState([
-    { productId: "", quantity: 1, unitPrice: 0 },
+    { productId: "", quantity: "1", unitPrice: "" },
   ]);
-  const [digital, setDigital] = useState(0),
-    [debt, setDebt] = useState(0);
+  const [digital, setDigital] = useState(""),
+    [debt, setDebt] = useState("");
   const [pendingCost, setPendingCost] = useState(
     r ? r.purchase_price === null : true,
   );
@@ -1585,7 +1590,7 @@ function OperationModal({
     };
   }, []);
   const total = items.reduce(
-    (s, i) => s + Math.round(i.unitPrice * 100) * i.quantity,
+    (s, i) => s + Math.round(Number(i.unitPrice) * 100) * Number(i.quantity),
     0,
   );
   async function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -1600,9 +1605,9 @@ function OperationModal({
     if (type === "sale")
       body = {
         ...body,
-        items,
-        digital,
-        debt,
+        items: items.map(i => ({ ...i, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),
+        digital: Number(digital),
+        debt: Number(debt),
         method: val("method"),
         reference: val("reference"),
         detail: val("detail"),
@@ -1741,8 +1746,7 @@ function OperationModal({
                                   ? {
                                       ...v,
                                       productId: e.target.value,
-                                      unitPrice:
-                                        Number(p?.sale_price ?? 0) / 100,
+                                      unitPrice: Number(p?.sale_price) ? String(Number(p?.sale_price) / 100) : "",
                                     }
                                   : v,
                               ),
@@ -1770,7 +1774,7 @@ function OperationModal({
                             setItems((prev) =>
                               prev.map((v, n) =>
                                 n === index
-                                  ? { ...v, quantity: Number(e.target.value) }
+                                  ? { ...v, quantity: numericText(e.target.value) }
                                   : v,
                               ),
                             )
@@ -1791,7 +1795,7 @@ function OperationModal({
                             setItems((prev) =>
                               prev.map((v, n) =>
                                 n === index
-                                  ? { ...v, unitPrice: Number(e.target.value) }
+                                  ? { ...v, unitPrice: numericText(e.target.value) }
                                   : v,
                               ),
                             )
@@ -1801,7 +1805,7 @@ function OperationModal({
                       <div className="line-subtotal">
                         <small>Subtotal</small>
                         <strong>
-                          {money(Math.round(i.unitPrice * 100) * i.quantity)}
+                          {money(Math.round(Number(i.unitPrice) * 100) * Number(i.quantity))}
                         </strong>
                       </div>
                       <button
@@ -1825,7 +1829,7 @@ function OperationModal({
                   onClick={() =>
                     setItems([
                       ...items,
-                      { productId: "", quantity: 1, unitPrice: 0 },
+                      { productId: "", quantity: "1", unitPrice: "" },
                     ])
                   }
                 >
@@ -1843,8 +1847,7 @@ function OperationModal({
                       min="0"
                       step="0.01"
                       value={digital}
-                      onChange={(e) => setDigital(Number(e.target.value))}
-                      required
+                      onChange={(e) => setDigital(numericText(e.target.value))}
                     />
                   </label>
                   <label>
@@ -1854,8 +1857,7 @@ function OperationModal({
                       min="0"
                       step="0.01"
                       value={debt}
-                      onChange={(e) => setDebt(Number(e.target.value))}
-                      required
+                      onChange={(e) => setDebt(numericText(e.target.value))}
                     />
                   </label>
                   <label>
@@ -1869,14 +1871,14 @@ function OperationModal({
                   <Field
                     label="Código de operación"
                     name="reference"
-                    required={digital > 0}
+                    required={Number(digital) > 0}
                     placeholder="Código de Yape o transferencia"
                   />
                 </div>
                 <Field
                   label="Detalle / motivo de deuda"
                   name="detail"
-                  required={debt > 0}
+                  required={Number(debt) > 0}
                   placeholder="Productos vendidos, cliente u observaciones"
                 />
                 <div className="info-message">
@@ -1884,8 +1886,8 @@ function OperationModal({
                   <strong>
                     {money(
                       total -
-                        Math.round(digital * 100) -
-                        Math.round(debt * 100),
+                        Math.round(Number(digital) * 100) -
+                        Math.round(Number(debt) * 100),
                     )}
                   </strong>
                   . La venta descontará stock al guardar.

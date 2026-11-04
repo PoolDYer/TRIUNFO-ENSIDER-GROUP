@@ -246,7 +246,7 @@ export default function Financing({
                     required
                     value={amount}
                     onChange={(e) => {
-                      setAmount(e.target.value);
+                      setAmount(e.target.value.replace(/^0+(?=\d)/, ""));
                       setRequestId(crypto.randomUUID());
                     }}
                   />
