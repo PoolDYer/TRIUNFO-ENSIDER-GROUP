@@ -31,7 +31,7 @@ async function fixture() {
   );
   const productId = randomUUID();
   await pg.query(
-    "INSERT INTO products(id,code,name,stock,sale_price) VALUES($1,'P001','Afeitador',10,1000)",
+    "INSERT INTO products(id,code,name,stock,sale_price,purchase_price) VALUES($1,'P001','Afeitador',10,1000,500)",
     [productId],
   );
   const wrap = (c: any): DB => ({
@@ -441,10 +441,10 @@ test("Entradas suman stock y validan el saldo al contado y crédito", async () =
       ),
       6000,
     );
-    await assert.rejects(
-      f.run("receipt", { ...input, id: randomUUID(), modality: "CASH" }),
-      /Al contado/,
-    );
+    await f.run("receipt", { ...input, id: randomUUID(), modality: "CASH" });
+    const cash = (await f.c.query("SELECT order_cost,paid FROM receipts WHERE modality='CASH'")).rows[0];
+    assert.equal(Number(cash.order_cost),10000);
+    assert.equal(Number(cash.paid),10000);
   } finally {
     await f.pg.close();
   }

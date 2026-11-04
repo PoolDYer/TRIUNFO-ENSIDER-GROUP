@@ -76,7 +76,7 @@ export async function GET(req: Request) {
     });
     const products = (
       await db.query(
-        "SELECT id,code,name,stock,sale_price,min_stock FROM products WHERE active=true ORDER BY code",
+        `SELECT id,code,name,stock,sale_price,min_stock${view === "receipts" ? ",purchase_price" : ""} FROM products WHERE active=true ORDER BY code`,
       )
     ).rows;
     const sales = (

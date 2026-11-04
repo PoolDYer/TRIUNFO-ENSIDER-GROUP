@@ -5,7 +5,11 @@ const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
     Number(v ?? 0) / 100,
   );
-export default function CreditFields() {
+export default function CreditFields({
+  orderCost,
+}: {
+  orderCost: number | null;
+}) {
   const [modality, setModality] = useState("CASH");
   const [principal, setPrincipal] = useState(0);
   const [rate, setRate] = useState(2);
@@ -33,7 +37,7 @@ export default function CreditFields() {
               name="creditPrincipal"
               type="number"
               min="0.01"
-              max="10000000"
+              max={orderCost === null ? 10000000 : orderCost / 100}
               step="0.01"
               required
               value={principal}
@@ -60,6 +64,24 @@ export default function CreditFields() {
           </p>
         </>
       )}
+      <label>
+        Monto pagado (S/)
+        <input
+          name="paid"
+          type="number"
+          readOnly
+          value={
+            orderCost === null
+              ? ""
+              : Math.max(
+                  0,
+                  orderCost -
+                    (modality === "CREDIT" ? Math.round(principal * 100) : 0),
+                ) / 100
+          }
+          placeholder="Se calcula automáticamente"
+        />
+      </label>
     </>
   );
 }

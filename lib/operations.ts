@@ -114,8 +114,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
         productId: id,
         quantity: quantitySchema,
         supplier: detail,
-        orderCost: moneySchema,
-        paid: moneySchema,
+        expectedOrderCost: moneySchema.optional(),
         modality: z.enum(["CASH", "CREDIT"]),
         creditPrincipal: positiveMoney.optional(),
         interestPercent: moneySchema.refine(v => v <= 100, "El interés debe estar entre 0 y 100 %").default(2),
@@ -123,13 +122,18 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       .parse(input);
     if (p.modality === "CREDIT" && p.creditPrincipal === undefined)
       throw new AppError("Indica el monto a crédito.");
-    if (
-      p.paid > p.orderCost ||
-      (p.modality === "CASH" && p.paid !== p.orderCost)
-    )
-      throw new AppError(
-        "Al contado, el pago debe ser igual al costo del pedido; al crédito no puede superarlo.",
-      );
+    const product = await c.query("SELECT purchase_price FROM products WHERE id=$1 AND active=true FOR UPDATE", [p.productId]);
+    if (!product.rows.length) throw new AppError("Producto no disponible.");
+    if (product.rows[0].purchase_price === null)
+      throw new AppError("El administrador debe confirmar el precio unitario de compra antes de registrar la entrada.");
+    const orderCost = Number(product.rows[0].purchase_price) * p.quantity;
+    if (!Number.isSafeInteger(orderCost) || orderCost < 0 || orderCost > 1000000000)
+      throw new AppError("El costo calculado supera el máximo de S/ 10 000 000 por entrada.");
+    if (p.expectedOrderCost !== undefined && cents(p.expectedOrderCost) !== orderCost)
+      throw new AppError("El precio de compra cambió. Actualiza los productos y registra la entrada con el nuevo costo.",409);
+    const principal = p.modality === "CREDIT" ? cents(p.creditPrincipal!) : 0;
+    if (principal > orderCost) throw new AppError("El monto a crédito no puede superar el costo del pedido.");
+    const paid = orderCost - principal;
     const r = await c.query(
       "UPDATE products SET stock=stock+$1 WHERE id=$2 AND active=true RETURNING id",
       [p.quantity, p.productId],
@@ -143,9 +147,9 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
         p.productId,
         p.quantity,
         p.supplier,
-        cents(p.orderCost),
+        orderCost,
         p.modality,
-        cents(p.paid),
+        paid,
         u.id,
       ],
     );

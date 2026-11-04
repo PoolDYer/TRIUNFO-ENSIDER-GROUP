@@ -30,7 +30,7 @@ import {
 import type { User } from "@/lib/auth";
 import GoogleSheetsExport from "./google-sheets-export";
 import Financing from "./financing";
-import CreditFields from "./credit-fields";
+import ReceiptFields from "./receipt-fields";
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
     Number(v ?? 0) / 100,
@@ -1613,8 +1613,7 @@ function OperationModal({
         productId: val("productId"),
         quantity: num("quantity"),
         supplier: val("supplier"),
-        orderCost: num("orderCost"),
-        paid: num("paid"),
+        expectedOrderCost: num("orderCost"),
         modality: val("modality"),
         ...(val("modality") === "CREDIT" ? { creditPrincipal: num("creditPrincipal"), interestPercent: num("interestPercent") } : {}),
       };
@@ -1893,38 +1892,7 @@ function OperationModal({
                 </div>
               </>
             )}
-            {type === "receipt" && (
-              <>
-                <label>
-                  Producto
-                  <select name="productId" required defaultValue="">
-                    <option value="">Selecciona un producto</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.code} · {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Field label="Proveedor" name="supplier" />
-                <div className="form-grid">
-                  <Field
-                    label="Cantidad ingresante"
-                    name="quantity"
-                    type="number"
-                    min="1"
-                    max="1000000"
-                    value={1}
-                  />
-                  <MoneyField label="Costo del pedido (S/)" name="orderCost" />
-                  <CreditFields />
-                  <MoneyField label="Monto pagado (S/)" name="paid" />
-                </div>
-                <p className="info-message">
-                  El monto pagado corresponde al pedido. El monto a crédito es el capital financiado y genera su propia deuda con interés único; sus abonos se registran en Financiamiento → Pagos. Registra aparte cualquier gasto pagado desde caja.
-                </p>
-              </>
-            )}
+            {type === "receipt" && <ReceiptFields products={products} />}
             {type === "expense" && (
               <>
                 <label>

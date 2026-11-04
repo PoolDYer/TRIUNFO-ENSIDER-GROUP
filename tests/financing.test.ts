@@ -24,7 +24,7 @@ async function fixture() {
     [user.id, user.name, user.email],
   );
   await pg.query(
-    "INSERT INTO products(id,code,name,stock,sale_price) VALUES($1,'F1','Producto',0,1000)",
+    "INSERT INTO products(id,code,name,stock,sale_price,purchase_price) VALUES($1,'F1','Producto',0,1000,20000)",
     [productId],
   );
   const wrap = (tx: any): DB => ({
@@ -171,6 +171,79 @@ test("La migración conserva créditos históricos sin interés y es repetible",
       f.run("receipt", f.receipt(r.date, { creditPrincipal: undefined })),
       /monto a crédito/,
     );
+  } finally {
+    await f.pg.close();
+  }
+});
+
+test("Entradas calculan costo y pago desde cantidad y precio de compra, ignorando importes manipulados", async () => {
+  const f = await fixture();
+  try {
+    await f.c.query("UPDATE products SET purchase_price=815 WHERE id=$1", [
+      f.productId,
+    ]);
+    const cash = f.receipt("2026-11-03", {
+      quantity: 3,
+      modality: "CASH",
+      orderCost: 999,
+      paid: 0,
+    });
+    await f.run("receipt", cash);
+    let stored = (
+      await f.c.query("SELECT order_cost,paid FROM receipts WHERE id=$1", [
+        cash.id,
+      ])
+    ).rows[0];
+    assert.equal(Number(stored.order_cost), 2445);
+    assert.equal(Number(stored.paid), 2445);
+    const credit = f.receipt("2026-11-03", {
+      quantity: 10,
+      creditPrincipal: 50,
+      paid: 999,
+    });
+    await f.run("receipt", credit);
+    stored = (
+      await f.c.query("SELECT order_cost,paid FROM receipts WHERE id=$1", [
+        credit.id,
+      ])
+    ).rows[0];
+    assert.equal(Number(stored.order_cost), 8150);
+    assert.equal(Number(stored.paid), 3150);
+    const debt = (await f.read()).credits[0];
+    assert.equal(Number(debt.total), 5100);
+    await f.c.query("UPDATE products SET purchase_price=900 WHERE id=$1", [
+      f.productId,
+    ]);
+    stored = (
+      await f.c.query("SELECT order_cost FROM receipts WHERE id=$1", [cash.id])
+    ).rows[0];
+    assert.equal(Number(stored.order_cost), 2445);
+    await assert.rejects(
+      f.run("receipt", f.receipt("2026-11-03", { expectedOrderCost: 200 })),
+      /precio de compra cambió/,
+    );
+    await assert.rejects(
+      f.run("receipt", f.receipt("2026-11-03", { creditPrincipal: 10 })),
+      /superar/,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});
+
+test("Sin precio de compra confirmado se rechaza la entrada sin modificar stock", async () => {
+  const f = await fixture();
+  try {
+    await f.c.query("UPDATE products SET purchase_price=NULL WHERE id=$1", [
+      f.productId,
+    ]);
+    await assert.rejects(f.run("receipt", f.receipt()), /confirmar el precio/);
+    assert.equal(
+      (await f.c.query("SELECT stock FROM products WHERE id=$1", [f.productId]))
+        .rows[0].stock,
+      0,
+    );
+    assert.equal((await f.read()).credits.length, 0);
   } finally {
     await f.pg.close();
   }
