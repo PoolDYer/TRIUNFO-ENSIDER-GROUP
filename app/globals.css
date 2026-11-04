@@ -1794,6 +1794,15 @@ td small {
 }
 
 .financing-form { padding: 0 24px 24px; }
+.receipt-picker { border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.receipt-picker summary { cursor: pointer; font-weight: 600; }
+.receipt-options { max-height: 200px; overflow: auto; padding-top: 8px; }
+.receipt-options .checkbox-label { padding: 8px 2px; }
+.receipt-line { display: grid; grid-template-columns: minmax(0, 1fr) minmax(90px, 110px) minmax(115px, 155px); gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+@media (max-width: 550px) {
+  .receipt-line { grid-template-columns: 1fr 1fr; }
+  .receipt-line > div { grid-column: 1 / -1; }
+}
 .financing-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 18px; margin-bottom: 24px; }
 .cell-sub { display: block; color: var(--muted); margin-top: 4px; }
 .google-help {

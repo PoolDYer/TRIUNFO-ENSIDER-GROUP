@@ -96,4 +96,13 @@ CREATE TABLE IF NOT EXISTS financing_payments (
 );
 CREATE INDEX IF NOT EXISTS financing_payments_receipt_idx ON financing_payments(receipt_id,date);
 CREATE INDEX IF NOT EXISTS financing_payments_date_idx ON financing_payments(date);
+CREATE TABLE IF NOT EXISTS receipt_items (
+ receipt_id uuid NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
+ product_id uuid NOT NULL REFERENCES products(id),
+ code text NOT NULL, name text NOT NULL,
+ quantity integer NOT NULL CHECK(quantity > 0),
+ unit_purchase_price bigint NOT NULL CHECK(unit_purchase_price >= 0),
+ PRIMARY KEY(receipt_id,product_id)
+);
+CREATE INDEX IF NOT EXISTS receipt_items_product_idx ON receipt_items(product_id);
 `;

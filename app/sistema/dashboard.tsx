@@ -78,6 +78,7 @@ const kindLabel: Record<string, string> = {
 const actionLabel: Record<string, string> = {
   sale: "Venta registrada",
   receipt: "Entrada registrada",
+  receiptOrder: "Pedido de entrada registrado",
   financingPayment: "Pago de financiamiento registrado",
   expense: "Gasto registrado",
   treasury: "Movimiento de caja",
@@ -763,7 +764,7 @@ export default function Dashboard({ user }: { user: User }) {
                         "Cantidad",
                         "Costo de pedido",
                         "Modalidad",
-                        "Saldo",
+                        "Total a crédito",
                         "Registrado por",
                       ]}
                     >
@@ -771,15 +772,16 @@ export default function Dashboard({ user }: { user: User }) {
                         <tr key={r.id}>
                           <td>{dateLabel(r.date)}</td>
                           <td>
-                            <strong>{r.name}</strong>
-                            <small>{r.code}</small>
+                            {r.items ? r.items.map((item: { code: string; name: string; quantity: number; total: number }) => (
+                              <div key={item.code}><strong>{item.name}</strong><small className="cell-sub">{item.code} · {item.quantity} ud. · {money(item.total)}</small></div>
+                            )) : <><strong>{r.name}</strong><small>{r.code}</small></>}
                           </td>
                           <td>{r.supplier}</td>
                           <td>{r.quantity}</td>
                           <td>{money(r.order_cost)}</td>
                           <td>{kindLabel[r.modality]}</td>
                           <td>
-                            {money(Number(r.order_cost) - Number(r.paid))}
+                            {r.modality === "CREDIT" ? money(Number(r.credit_principal) + Math.round(Number(r.credit_principal) * Number(r.interest_bps) / 10000)) : "—"}
                           </td>
                           <td>{r.user_name}</td>
                         </tr>
@@ -1615,12 +1617,9 @@ function OperationModal({
     if (type === "receipt")
       body = {
         ...body,
-        productId: val("productId"),
-        quantity: num("quantity"),
-        supplier: val("supplier"),
+        items: f.getAll("productId").map((productId,i) => ({ productId, quantity: Number(f.getAll("quantity")[i]) })),
         expectedOrderCost: num("orderCost"),
         modality: val("modality"),
-        ...(val("modality") === "CREDIT" ? { creditPrincipal: num("creditPrincipal"), interestPercent: num("interestPercent") } : {}),
       };
     if (["expense", "treasury", "bank"].includes(type))
       body = {
@@ -1661,7 +1660,7 @@ function OperationModal({
                 current: val("current"),
                 password: val("password"),
               }
-            : { action: type, data: body },
+            : { action: type === "receipt" ? "receiptOrder" : type, data: body },
         ),
       });
       const d = await resp.json();
@@ -1682,7 +1681,7 @@ function OperationModal({
     >
       <section
         ref={dialogRef}
-        className={"modal " + (type === "sale" ? "wide" : "")}
+        className={"modal " + (["sale","receipt"].includes(type) ? "wide" : "")}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"

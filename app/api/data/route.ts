@@ -105,7 +105,11 @@ export async function GET(req: Request) {
     ).rows;
     const receipts = (
       await db.query(
-        "SELECT r.*,p.name,p.code,u.name AS user_name FROM receipts r JOIN products p ON p.id=r.product_id JOIN users u ON u.id=r.user_id WHERE date BETWEEN $1 AND $2 ORDER BY r.created_at DESC LIMIT 200",
+        `SELECT r.*,p.name,p.code,u.name AS user_name,
+          (SELECT json_agg(json_build_object('name',i.name,'code',i.code,'quantity',i.quantity,'total',i.quantity*i.unit_purchase_price) ORDER BY i.code)
+           FROM receipt_items i WHERE i.receipt_id=r.id) AS items
+         FROM receipts r JOIN products p ON p.id=r.product_id JOIN users u ON u.id=r.user_id
+         WHERE r.date BETWEEN $1 AND $2 ORDER BY r.created_at DESC LIMIT 200`,
         [start, end],
       )
     ).rows;

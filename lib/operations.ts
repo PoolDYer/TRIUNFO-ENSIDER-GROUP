@@ -13,6 +13,7 @@ import {
 } from "./validation";
 import { hashPassword } from "./password";
 import { financingInterest } from "./financing";
+import { registerReceiptOrder } from "./receipt-order";
 const detail = z.string().trim().min(1).max(500);
 const id = z.string().uuid();
 const base = { id, date: dateSchema };
@@ -107,6 +108,8 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       );
     }
     entity = p.id;
+  } else if (action === "receiptOrder") {
+    entity = await registerReceiptOrder(c,u,input);
   } else if (action === "receipt") {
     const p = z
       .object({

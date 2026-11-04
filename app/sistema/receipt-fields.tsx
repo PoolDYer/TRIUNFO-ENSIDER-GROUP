@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import CreditFields from "./credit-fields";
+import { receiptInterest, receiptSupplier } from "@/lib/receipt-order-values";
 
 type EntryProduct = {
   id: string;
@@ -8,76 +8,140 @@ type EntryProduct = {
   name: string;
   purchase_price?: string | null;
 };
+const money = (cents: number) =>
+  new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
+    cents / 100,
+  );
+
 export default function ReceiptFields({
   products,
 }: {
   products: EntryProduct[];
 }) {
-  const [productId, setProductId] = useState("");
-  const [quantity, setQuantity] = useState(1);
-  const product = products.find((p) => p.id === productId);
-  const purchasePrice = product?.purchase_price;
-  const cost = purchasePrice == null ? null : Number(purchasePrice) * quantity;
+  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [modality, setModality] = useState("CASH");
+  const lines = products.filter((p) => Object.hasOwn(selected, p.id));
+  const subtotal = (p: EntryProduct) =>
+    Number(p.purchase_price) * Number(selected[p.id]);
+  const total = lines.reduce((s, p) => s + subtotal(p), 0);
+  const interest = receiptInterest(total);
+
+  function toggle(id: string, checked: boolean) {
+    setSelected((prev) => {
+      const next = { ...prev };
+      if (checked) next[id] = "1";
+      else delete next[id];
+      return next;
+    });
+  }
+
   return (
     <>
       <label>
-        Producto
-        <select
-          name="productId"
-          required
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-        >
-          <option value="">Selecciona un producto</option>
+        Distribuidor
+        <input readOnly value={receiptSupplier} />
+      </label>
+      <details className="receipt-picker">
+        <summary>
+          Seleccionar productos{lines.length ? ` (${lines.length})` : ""}
+        </summary>
+        <div className="receipt-options">
+          {products.length === 0 && <p>No hay productos disponibles.</p>}
           {products.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.code} · {p.name}
-            </option>
+            <label key={p.id} className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={Object.hasOwn(selected, p.id)}
+                disabled={
+                  p.purchase_price == null ||
+                  (lines.length >= 50 && !Object.hasOwn(selected, p.id))
+                }
+                onChange={(e) => toggle(p.id, e.target.checked)}
+              />
+              <span>
+                {p.code} · {p.name}
+                {p.purchase_price == null
+                  ? " (precio de compra pendiente)"
+                  : ""}
+              </span>
+            </label>
           ))}
+        </div>
+      </details>
+      {lines.map((p) => (
+        <div className="receipt-line" key={p.id}>
+          <div>
+            <strong>{p.name}</strong>
+            <small className="cell-sub">
+              {money(Number(p.purchase_price))} por unidad
+            </small>
+          </div>
+          <input type="hidden" name="productId" value={p.id} />
+          <label>
+            Cantidad
+            <input
+              aria-label={`Cantidad de ${p.name}`}
+              name="quantity"
+              type="number"
+              required
+              min="1"
+              max="1000000"
+              step="1"
+              value={selected[p.id]}
+              onChange={(e) => {
+                const quantity = e.target.value.replace(/^0+(?=\d)/, "");
+                setSelected((prev) => ({ ...prev, [p.id]: quantity }));
+              }}
+            />
+          </label>
+          <label>
+            Monto del producto
+            <input readOnly value={money(subtotal(p))} />
+          </label>
+        </div>
+      ))}
+      <label>
+        Modalidad
+        <select
+          name="modality"
+          value={modality}
+          onChange={(e) => setModality(e.target.value)}
+        >
+          <option value="CASH">Al contado</option>
+          <option value="CREDIT">A crédito</option>
         </select>
       </label>
-      <label>
-        Proveedor
-        <input name="supplier" required maxLength={500} />
-      </label>
-      {product && purchasePrice == null && (
-        <p role="alert" className="error-message">
-          El administrador debe confirmar el precio unitario de compra de este
-          producto antes de registrar la entrada.
-        </p>
-      )}
+      <input type="hidden" name="orderCost" value={total / 100} />
       <div className="form-grid">
         <label>
-          Cantidad ingresante
-          <input
-            name="quantity"
-            type="number"
-            required
-            min="1"
-            max="1000000"
-            step="1"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-          />
+          Monto total del pedido
+          {modality === "CREDIT" ? " (Monto a crédito)" : ""}
+          <input readOnly value={money(total)} />
         </label>
-        <label>
-          Costo del pedido (S/)
-          <input
-            name="orderCost"
-            type="number"
-            readOnly
-            value={cost === null ? "" : cost / 100}
-            placeholder="Se calcula automáticamente"
-          />
-        </label>
-        <CreditFields orderCost={cost} />
+        {modality === "CREDIT" ? (
+          <>
+            <label>
+              Interés fijo (2 %)
+              <input readOnly value={money(interest)} />
+            </label>
+            <label>
+              Monto total a crédito
+              <input readOnly value={money(total + interest)} />
+            </label>
+          </>
+        ) : (
+          <label>
+            Monto pagado
+            <input readOnly value={money(total)} />
+          </label>
+        )}
       </div>
-      <p className="info-message">
-        Costo del pedido = cantidad ingresante × precio unitario de compra. Al
-        contado, el monto pagado es el costo completo; a crédito, se descuenta
-        el capital financiado. Los abonos posteriores se registran en
-        Financiamiento → Pagos. Registra aparte cualquier salida de caja.
-      </p>
+      {modality === "CREDIT" && (
+        <p className="info-message">
+          El interés se aplica una sola vez al total del pedido. Al guardar,
+          Financiamiento mostrará el monto total a crédito como deuda pendiente.
+        </p>
+      )}
     </>
   );
 }

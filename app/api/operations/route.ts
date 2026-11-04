@@ -9,6 +9,7 @@ export async function POST(req: Request) {
     checkOrigin(req);
     const u = await requireUser();
     const p = await req.json();
+    if (p.action === "receipt") throw new AppError("Actualiza la página para usar el nuevo formulario de pedidos.",409);
     return NextResponse.json(
       await transaction((c) => operate(c, u, p.action, p.data)),
     );
