@@ -3,6 +3,7 @@ import { db, transaction } from "@/lib/db";
 import { AppError, requireUser } from "@/lib/auth";
 import { dateSchema, periodRange, today } from "@/lib/validation";
 import { report } from "@/lib/reports";
+import { financingReport } from "@/lib/financing";
 const options = { headers: { "Cache-Control": "private, no-store" } };
 export const runtime = "nodejs";
 export async function GET(req: Request) {
@@ -15,6 +16,13 @@ export async function GET(req: Request) {
       );
     const url = new URL(req.url);
     const view = url.searchParams.get("view") ?? "overview";
+    if (view === "financing") {
+      const financing = await transaction(async c => {
+        await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
+        return financingReport(c);
+      });
+      return NextResponse.json({ financing }, options);
+    }
     const date = dateSchema.parse(url.searchParams.get("date") ?? today());
     const period = url.searchParams.get("period") ?? "day";
     if (!["day", "week", "month"].includes(period))

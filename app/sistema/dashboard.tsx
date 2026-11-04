@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import type { User } from "@/lib/auth";
 import GoogleSheetsExport from "./google-sheets-export";
+import Financing from "./financing";
 import CreditFields from "./credit-fields";
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -52,6 +53,7 @@ const nav = [
   { id: "sales", label: "Ventas del día", icon: ShoppingBag },
   { id: "receipts", label: "Control de entrada", icon: PackagePlus },
   { id: "expenses", label: "Gastos y caja", icon: Receipt },
+  { id: "financing", label: "Financiamiento", icon: Wallet },
   { id: "bank", label: "Cuenta corriente", icon: Landmark },
   { id: "reports", label: "Reportes", icon: ChartNoAxesCombined },
   { id: "products", label: "Lista de productos", icon: Boxes, admin: true },
@@ -75,6 +77,7 @@ const kindLabel: Record<string, string> = {
 const actionLabel: Record<string, string> = {
   sale: "Venta registrada",
   receipt: "Entrada registrada",
+  financingPayment: "Pago de financiamiento registrado",
   expense: "Gasto registrado",
   treasury: "Movimiento de caja",
   bank: "Cuenta corriente",
@@ -245,7 +248,7 @@ export default function Dashboard({ user }: { user: User }) {
     setLoading(true);
     setError("");
     setData(null);
-    fetch(`/api/data?view=${view}&date=${date}&period=${period}`, {
+    fetch(view === "financing" ? "/api/data?view=financing" : `/api/data?view=${view}&date=${date}&period=${period}`, {
       signal: controller.signal,
     })
       .then(async (r) => {
@@ -424,6 +427,7 @@ export default function Dashboard({ user }: { user: User }) {
                         "Registra mercadería y mantén las existencias al día.",
                       expenses:
                         "Gastos operativos, gastos fijos y movimientos de caja.",
+                      financing: "Todos los créditos, su interés único y el historial de pagos.",
                       bank: "Ingresos diarios, retiros y acumulado semanal.",
                       reports:
                         "Consulta el inventario y el control financiero por período.",
@@ -439,7 +443,7 @@ export default function Dashboard({ user }: { user: User }) {
               </p>
             </div>
             <div className="heading-actions">
-              {!isSpecial && (
+              {!isSpecial && view !== "financing" && (
                 <GoogleSheetsExport
                   date={date}
                   period={period}
@@ -491,7 +495,7 @@ export default function Dashboard({ user }: { user: User }) {
               )}
             </div>
           </div>
-          {!isSpecial && (
+          {!isSpecial && view !== "financing" && (
             <div className="filterbar">
               <div className="segmented" aria-label="Período">
                 {[
@@ -551,6 +555,7 @@ export default function Dashboard({ user }: { user: User }) {
           )}
           {!loading && data && (
             <>
+              {view === "financing" && data.financing && <Financing data={data.financing} date={day()} onSaved={() => {setNotice("Pago de financiamiento registrado.");setRefresh(n => n + 1);}} />}
               {t && ["overview", "reports"].includes(view) && (
                 <>
                   <div className="period-caption">

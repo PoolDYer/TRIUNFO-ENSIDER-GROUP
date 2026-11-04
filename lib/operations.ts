@@ -153,6 +153,21 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       await c.query("UPDATE receipts SET credit_principal=$2,interest_bps=$3 WHERE id=$1",
         [p.id,cents(p.creditPrincipal!),cents(p.interestPercent)]);
     entity = p.id;
+  } else if (action === "financingPayment") {
+    const p = z.object({ ...base, receiptId: id, amount: positiveMoney,
+      detail: z.string().trim().max(500).default("") }).parse(input);
+    const { rows } = await c.query("SELECT date::text,credit_principal,interest_bps FROM receipts WHERE id=$1 AND modality='CREDIT' FOR UPDATE", [p.receiptId]);
+    if (!rows.length) throw new AppError("El financiamiento no existe.",404);
+    const credit = rows[0];
+    if (p.date < credit.date) throw new AppError("El pago no puede ser anterior al crédito.");
+    const paid = await c.query("SELECT COALESCE(sum(amount),0) AS paid FROM financing_payments WHERE receipt_id=$1",[p.receiptId]);
+    const principal = Number(credit.credit_principal);
+    const total = principal + financingInterest(principal, Number(credit.interest_bps));
+    if (cents(p.amount) > total - Number(paid.rows[0].paid))
+      throw new AppError("El pago supera la deuda restante. Actualiza los datos.",409);
+    await c.query("INSERT INTO financing_payments(id,receipt_id,date,amount,detail,user_id) VALUES($1,$2,$3,$4,$5,$6)",
+      [p.id,p.receiptId,p.date,cents(p.amount),p.detail,u.id]);
+    entity = p.id;
   } else if (
     action === "expense" ||
     action === "treasury" ||

@@ -114,7 +114,15 @@ node scripts/load-test.mjs
 
 Ejecuta diez rondas de consultas simultáneas, informa errores y latencias P50/P95 y cierra sus sesiones. No modifica inventario ni caja. Comparar los resultados con métricas de Vercel y conexiones de la base antes de concluir que el despliegue soporta diez usuarios. Las pruebas locales no garantizan disponibilidad, tiempos de respuesta ni límites de un plan específico.
 
-## Configurar los enlaces a Google Sheets
+## Financiamiento y pagos
+
+En Control de entrada, al seleccionar **A crédito** se habilitan Monto a crédito e Interés único (%), con 2 % por defecto y editable. Al guardar la entrada se registra automáticamente su financiamiento, en la misma transacción que aumenta las existencias. El interés se aplica una sola vez: S/ 200 al 2 % genera una deuda total de S/ 204. El pago inicial del pedido y el capital financiado son datos independientes; los abonos a la deuda se registran en Financiamiento → Pagos.
+
+Financiamiento aparece debajo de Gastos y caja y muestra todos los créditos y pagos, sin filtros diarios, semanales ni mensuales. Cada registro conserva su fecha. Se muestran deuda total, pagos acumulados y saldo actual. No se permiten pagos anteriores al crédito ni que superen el saldo; los abonos simultáneos se validan bloqueando la deuda. Tanto administradores como vendedores pueden registrar entradas y pagos.
+
+Para actualizar una instalación existente, detener el servidor local y ejecutar `npm run db:migrate`; después volver a iniciarlo. Este comando actualiza únicamente el esquema y conserva cuentas e inventario sin reimportar productos. Los créditos anteriores conservan el saldo original del pedido, sin interés retroactivo. Los pagos de financiamiento no descuentan caja automáticamente; registrar la salida de caja por separado cuando corresponda.
+
+## Configuración de Google Sheets
 
 El botón «Generar enlace a Google Sheets» sustituye la descarga CSV. Crea una copia del reporte del período seleccionado, con tres pestañas: Resumen financiero, Productos vendidos y Ventas por día. La hoja contiene importes numéricos con formato de soles, fechas y texto literal, sin ejecutar nombres de productos como fórmulas. La generación se audita y una solicitud repetida no vuelve a crear la misma hoja.
 

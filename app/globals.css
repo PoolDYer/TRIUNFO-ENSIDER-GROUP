@@ -1782,6 +1782,9 @@ td small {
   }
 }
 
+.financing-form { padding: 0 24px 24px; }
+.financing-stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 18px; margin-bottom: 24px; }
+.cell-sub { display: block; color: var(--muted); margin-top: 4px; }
 .google-help {
   max-width: 860px;
   margin: 50px auto;
