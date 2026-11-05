@@ -10,6 +10,8 @@ Usaremos únicamente PostgreSQL de Supabase. Los correos, contraseñas y roles D
 4. Ejecutar `npm run db:supabase:check`. Este comando solo comprueba la conexión y el rol de base; no crea cuentas ni modifica datos.
 5. En la configuración de Data API de Supabase, desactivar la Data API si no se va a utilizar. La aplicación se conecta directamente desde su servidor.
 
+Si la verificación TLS solicita una CA, descargar el certificado oficial de **Database Settings > SSL Configuration** y guardarlo como `.work/supabase-ca.crt`. Los comandos de comprobación y preparación lo detectan automáticamente. También aceptan `DATABASE_SSL_CA_FILE` en el archivo privado para otra ruta, o `DATABASE_SSL_CA` con el contenido PEM. En Vercel configurar `DATABASE_SSL_CA` con el contenido completo del certificado. La verificación del certificado y del nombre del servidor permanece activa.
+
 No compartir la URI, la contraseña ni el contenido del archivo por chat. No usar una clave `anon` o `service_role` como contraseña PostgreSQL.
 
 ## Preparar las tablas

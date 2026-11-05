@@ -9,10 +9,13 @@ async function main() {
   // Archivo separado: no reemplaza ni carga las credenciales del sistema local.
   if (!existsSync(".env.supabase.local"))
     throw new Error("Configura DATABASE_URL en .env.supabase.local.");
-  const connection = parseEnv(readFileSync(".env.supabase.local", "utf8")).DATABASE_URL ?? "";
+  const env = parseEnv(readFileSync(".env.supabase.local", "utf8"));
+  const connection = env.DATABASE_URL ?? "";
   if (!connection || connection.includes("YOUR-PASSWORD") || connection.includes("PROJECT-REF"))
     throw new Error("Completa la URI privada de Supabase en .env.supabase.local.");
-  const config = postgresConfig(connection);
+  const certFile = env.DATABASE_SSL_CA_FILE || ".work/supabase-ca.crt";
+  const ca = env.DATABASE_SSL_CA || (existsSync(certFile) ? readFileSync(certFile, "utf8") : undefined);
+  const config = postgresConfig(connection, ca);
   const url = new URL(config.connectionString!);
   if (!/\.(supabase\.com|supabase\.co)$/.test(url.hostname))
     throw new Error("Este comando requiere una conexión a Supabase.");
@@ -45,7 +48,10 @@ async function main() {
 
 main().catch(error => {
   // Nunca imprimir errores del driver que puedan contener host, usuario o URI.
-  if (error instanceof Error && !('code' in error)) console.error(error.message.startsWith("Invalid URL") ? "La URI PostgreSQL no es válida." : error.message);
+  if (["SELF_SIGNED_CERT_IN_CHAIN", "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "UNABLE_TO_GET_ISSUER_CERT_LOCALLY"].includes(error?.code))
+    console.error("Falta confiar en la CA oficial del proyecto. Guarda el certificado de Supabase en .work/supabase-ca.crt y repite la prueba.");
+  else if (error?.code === "28P01") console.error("Supabase rechazó la contraseña. Revisa la URI privada y elimina los corchetes de la plantilla si no pertenecen a tu contraseña.");
+  else if (error instanceof Error && !('code' in error)) console.error(error.message.startsWith("Invalid URL") ? "La URI PostgreSQL no es válida." : error.message);
   else console.error("No se pudo completar la conexión o preparación. Revisa la URI, contraseña, estado y acceso de red del proyecto.");
   process.exitCode = 1;
 });
