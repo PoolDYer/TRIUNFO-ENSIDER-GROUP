@@ -23,9 +23,9 @@ El rol **Dueño** tiene todos los privilegios. El resto de cuentas tienen el rol
 
 ## Base de datos recomendada
 
-**PostgreSQL persistente**, alojado cerca de las funciones de Vercel. Puede ser administrado, por ejemplo Neon, o un servidor PostgreSQL propio. La autenticación permanece en nuestras tablas; contratar la base no exige integrar un servicio de autenticación.
+**PostgreSQL de Supabase**, alojado cerca de las funciones de Vercel. La autenticación permanece en nuestras tablas. La preparación, protección de tablas, transferencia de los datos actuales y configuración de Vercel se describen en [SUPABASE.md](SUPABASE.md).
 
-Vercel aloja la aplicación y sus API; el disco de sus funciones no sirve como base de datos persistente compartida. PostgreSQL debe ejecutarse fuera de esas funciones. Si se usa un proveedor con endpoint de conexiones agrupadas, configurar ese endpoint en `DATABASE_URL`. El cliente utiliza hasta tres conexiones por instancia y el manejo de pool de `@vercel/functions`.
+Vercel aloja la aplicación y sus API; el disco de sus funciones no sirve como base de datos persistente compartida. PostgreSQL debe ejecutarse fuera de esas funciones. Configurar Transaction pooler de Supabase en `DATABASE_URL`. El cliente limita a una conexión por instancia para Supabase y utiliza el manejo de pool de `@vercel/functions`.
 
 Documentación: [PostgreSQL en Vercel](https://vercel.com/docs/postgres), [conexiones y pooling](https://vercel.com/kb/guide/connection-pooling-with-functions).
 
@@ -46,6 +46,8 @@ No ejecutar dos procesos que abran el mismo directorio PGlite simultáneamente: 
 Al actualizar una instalación existente, ejecutar `npm run db:setup` antes de iniciar la nueva versión. La preparación aplica también la migración para eliminar administradores conservando sus operaciones: añade la fecha de eliminación y permite reutilizar el correo en una cuenta nueva. No cambia las contraseñas ni los datos existentes.
 
 ## Preparación y despliegue en Vercel
+
+Para trasladar **los datos actuales a Supabase**, seguir primero [SUPABASE.md](SUPABASE.md). Los pasos de inicialización siguientes se aplican a una instalación nueva; no sustituyen la transferencia del inventario y operaciones existentes.
 
 1. Crear una base PostgreSQL vacía y guardar su URL con TLS. Nunca subir la URL ni contraseñas a Git.
 2. En una terminal local, configurar `DATABASE_URL` y `LOCAL_DATABASE=false`. Si existe `.env.local`, quitar de allí la configuración local o usar una copia con los valores de producción. Las variables ya presentes en el entorno tienen prioridad.

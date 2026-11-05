@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { postgresConfig } from "./postgres-config";
 import { attachDatabasePool } from "@vercel/functions";
 import { PGlite } from "@electric-sql/pglite";
 export type DB = {
@@ -20,12 +21,7 @@ function pool() {
   if (!process.env.DATABASE_URL)
     throw new Error("Falta configurar DATABASE_URL.");
   if (!g.triunfoPool) {
-    g.triunfoPool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      max: 3,
-      idleTimeoutMillis: 5000,
-      connectionTimeoutMillis: 10000,
-    });
+    g.triunfoPool = new Pool(postgresConfig(process.env.DATABASE_URL));
     attachDatabasePool(g.triunfoPool);
   }
   return g.triunfoPool;
