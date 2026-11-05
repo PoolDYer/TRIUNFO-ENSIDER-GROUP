@@ -28,6 +28,18 @@ El comando aplica el esquema y protege sus tablas dentro de una transacción: ac
 
 La aplicación continúa utilizando su base local hasta completar y verificar esa migración. No borrar `.local-db` ni cambiar `LOCAL_DATABASE` en `.env.local` anticipadamente.
 
+### Transferir los datos existentes
+
+Detener el servidor antes de copiar `.local-db`. Crear un respaldo íntegro sin abrirlo y una segunda copia para la transferencia, ambas dentro de `.work/backups`. Luego ejecutar:
+
+```powershell
+npm run db:supabase:transfer -- .work/backups/FECHA/copia-transferencia
+```
+
+El comando lee exclusivamente esa copia de trabajo, crea un archivo privado de transferencia y conecta a Session pooler. Rechaza cualquier destino que ya tenga datos en una tabla propia. Copia todas las tablas en orden de dependencias, conserva identificadores y valores numéricos exactos, y compara cantidades y huellas del contenido antes de confirmar la transacción. Cualquier fallo revierte la transferencia. El respaldo y los archivos de verificación permanecen excluidos de Git dentro de `.work`.
+
+Tras la verificación, configurar `.env.local` con `LOCAL_DATABASE=false`, la URI de Transaction pooler y `DATABASE_SSL_CA` con el PEM completo. Conservar el resto de variables, especialmente la clave de cifrado de Google, y reiniciar el servidor. No volver a ejecutar el inicializador del Excel para esta instalación.
+
 ## Variables en Vercel
 
 Después de transferir y verificar los datos:

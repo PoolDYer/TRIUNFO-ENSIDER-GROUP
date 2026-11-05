@@ -11,6 +11,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:supabase:check": "tsx scripts/supabase.ts",
     "db:supabase:prepare": "tsx scripts/supabase.ts --prepare",
+    "db:supabase:transfer": "tsx scripts/transfer-supabase.ts",
     "test": "tsx --test tests/*.test.ts"
   },
   "dependencies": {
