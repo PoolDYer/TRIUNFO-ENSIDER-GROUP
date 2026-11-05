@@ -33,6 +33,7 @@ const summary = {
       "week",
     ),
     cashReceipts: 782500,
+    productLossAmount: 0,
     salesCount: 7,
     bankIncome: 280000,
     bankWithdrawals: 13000,

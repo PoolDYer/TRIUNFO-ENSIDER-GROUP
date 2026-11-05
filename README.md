@@ -114,6 +114,12 @@ node scripts/load-test.mjs
 
 Ejecuta diez rondas de consultas simultáneas, informa errores y latencias P50/P95 y cierra sus sesiones. No modifica inventario ni caja. Comparar los resultados con métricas de Vercel y conexiones de la base antes de concluir que el despliegue soporta diez usuarios. Las pruebas locales no garantizan disponibilidad, tiempos de respuesta ni límites de un plan específico.
 
+## Pérdida de productos al registrar ventas
+
+En Registrar venta, las pérdidas se indican por producto y cantidad en una lista separada. Son unidades adicionales a las vendidas: vender dos unidades y perder una descuenta tres unidades del stock. El sistema calcula el «Monto total de deuda / pérdida de productos» con el precio de venta del catálogo, conserva ese precio histórico y solicita el motivo. La pérdida no se cobra al cliente ni se vuelve a descontar del efectivo por recibir; el total vendido sigue incluyendo solo las unidades vendidas. En Ganancias se resta el costo histórico de compra de las unidades perdidas, además de la inversión de lo vendido y los gastos. Los importes de deuda de ventas antiguas se conservan como históricos y no se convierten en pérdidas de inventario.
+
+Actualizar el esquema con `npm run db:migrate` antes de iniciar esta versión; detener primero el servidor si se utiliza la base local PGlite.
+
 ## Financiamiento y pagos
 
 En Control de entrada, el distribuidor es **CORP. G.S. S.A.** Marca los productos del pedido y edita la cantidad de cada uno. El subtotal de cada producto es cantidad × precio unitario de compra. Al contado, el monto pagado equivale al total. A crédito, se aplica un interés fijo del 2 % una sola vez al total del pedido: S/ 200 genera una deuda de S/ 204. Al guardar se actualizan todos los stocks y se crea una sola deuda por pedido. Los abonos se registran en Financiamiento → Pagos. El servidor calcula los importes desde el catálogo y conserva el detalle y los precios históricos de cada pedido.

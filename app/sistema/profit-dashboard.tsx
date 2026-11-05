@@ -10,17 +10,18 @@ export default function ProfitDashboard({data}:{data:Data}) {
     ["Inversión de lo vendido",money(data.missingCosts ? null : data.investment),"Cantidad vendida × costo histórico de compra"],
     ["Gastos operativos",money(data.operating),"Gastos registrados en el período"],
     ["Gastos fijos",money(data.fixed),"Gastos registrados en el período"],
+    ["Pérdida de productos (costo)",money(data.missingCosts ? null : data.productLossCost),`Valor de venta de lo perdido: ${money(data.productLossAmount)}`],
     ["Ganancia neta",money(data.gain),"Resultado positivo después de costos y gastos"],
     ["Pérdida",money(data.loss),"Resultado negativo después de costos y gastos"],
   ];
   const maximum = Math.max(1,...data.daily.map(d=>Math.abs(d.result ?? 0)));
   return <>
     <p className="period-caption">{dateLabel(data.start)} al {dateLabel(data.end)} · Montos en soles</p>
-    {data.missingCosts > 0 && <p role="alert" className="info-message">Hay {data.missingCosts} líneas de venta sin costo de compra histórico. La ganancia y la pérdida quedan pendientes para no mostrar resultados incorrectos. Cambiar el precio actual del catálogo no modifica esas ventas anteriores.</p>}
+    {data.missingCosts > 0 && <p role="alert" className="info-message">Hay {data.missingCosts} líneas de venta o pérdida sin costo de compra histórico. La ganancia y la pérdida quedan pendientes para no mostrar resultados incorrectos. Cambiar el precio actual del catálogo no modifica esos movimientos anteriores.</p>}
     <div className="stats three">{cards.map(([label,value,note])=><article className="stat" key={label}><div className="stat-label">{label}</div><strong>{value}</strong><small>{note}</small></article>)}</div>
     <section className="panel">
       <div className="panel-heading"><h2>Resultado neto: {money(data.result)}</h2></div>
-      <p className="panel-hint">Total vendido − inversión de los productos vendidos − gastos operativos − gastos fijos. La inversión usa el precio de compra guardado al vender, no el valor del stock actual. Las ventas pendientes de cobro se incluyen en el total vendido; este resultado no representa el efectivo en caja.</p>
+      <p className="panel-hint">Total vendido − inversión de los productos vendidos − gastos operativos − gastos fijos − costo de los productos perdidos. Las pérdidas son unidades adicionales a las vendidas, no cobros pendientes. Los costos históricos se conservan; este resultado no representa el efectivo en caja.</p>
       <div className="profit-days">{data.daily.map(d=><div className="profit-day" key={d.date}>
         <span>{dateLabel(d.date)}</span>
         <div className="profit-track" role="img" aria-label={`${dateLabel(d.date)}: ${d.result === null ? "resultado pendiente" : d.result < 0 ? "pérdida " + money(-d.result) : "ganancia " + money(d.result)}`}>
@@ -30,8 +31,8 @@ export default function ProfitDashboard({data}:{data:Data}) {
       </div>)}</div>
     </section>
     <section className="panel"><div className="panel-heading"><h2>Detalle por fecha</h2></div>
-      <div className="table-scroll"><table><thead><tr>{["Fecha","Vendido","Inversión de lo vendido","Gastos operativos","Gastos fijos","Resultado neto"].map(h=><th key={h}>{h}</th>)}</tr></thead>
-      <tbody>{data.daily.map(d=><tr key={d.date}><td>{dateLabel(d.date)}</td><td>{money(d.sold)}</td><td>{money(d.missingCosts ? null : d.investment)}</td><td>{money(d.operating)}</td><td>{money(d.fixed)}</td><td><strong>{money(d.result)}</strong></td></tr>)}</tbody></table></div>
+      <div className="table-scroll"><table><thead><tr>{["Fecha","Vendido","Inversión de lo vendido","Gastos operativos","Gastos fijos","Pérdida de productos (costo)","Resultado neto"].map(h=><th key={h}>{h}</th>)}</tr></thead>
+      <tbody>{data.daily.map(d=><tr key={d.date}><td>{dateLabel(d.date)}</td><td>{money(d.sold)}</td><td>{money(d.missingCosts ? null : d.investment)}</td><td>{money(d.operating)}</td><td>{money(d.fixed)}</td><td>{money(d.missingCosts ? null : d.productLossCost)}</td><td><strong>{money(d.result)}</strong></td></tr>)}</tbody></table></div>
     </section>
   </>;
 }

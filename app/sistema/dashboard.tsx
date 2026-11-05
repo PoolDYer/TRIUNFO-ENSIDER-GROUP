@@ -34,6 +34,7 @@ import ReceiptFields from "./receipt-fields";
 import FinancialGroups from "./financial-groups";
 import ExpenseDashboard from "./expense-dashboard";
 import ProfitDashboard from "./profit-dashboard";
+import SaleLosses from "./sale-losses";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -1441,7 +1442,7 @@ function SalesTable({ sales }: { sales: any[] }) {
         "Productos vendidos",
         "Facturación",
         "Yape / transf.",
-        "Deuda",
+        "Deuda / pérdida de productos",
         "Efectivo",
         "Código de operación",
         "Registrado por",
@@ -1475,7 +1476,7 @@ function SalesTable({ sales }: { sales: any[] }) {
             {money(s.digital)}
             {Number(s.digital) > 0 && <small>{kindLabel[s.method]}</small>}
           </td>
-          <td>{money(s.debt)}</td>
+          <td>{money(Number(s.debt) + Number(s.loss_amount ?? 0))}{Number(s.debt)>0 && <small>Deuda histórica: {money(s.debt)}</small>}{s.losses?.map((loss:any)=><small key={loss.product_id}>{loss.quantity} × {loss.name} perdidos · {money(Number(loss.quantity)*Number(loss.unit_price))}</small>)}</td>
           <td>{money(s.cash)}</td>
           <td>{s.reference || "—"}</td>
           <td>{s.user_name}</td>
@@ -1509,8 +1510,7 @@ function OperationModal({
   const [items, setItems] = useState([
     { productId: "", quantity: "1", unitPrice: "" },
   ]);
-  const [digital, setDigital] = useState(""),
-    [debt, setDebt] = useState("");
+  const [digital, setDigital] = useState("");
   const titles: Record<string, string> = {
     sale: "Registrar venta",
     receipt: "Registrar entrada",
@@ -1587,10 +1587,11 @@ function OperationModal({
         ...body,
         items: items.map(i => ({ ...i, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice) })),
         digital: Number(digital),
-        debt: Number(debt),
+        debt: 0,
+        losses: f.getAll("lossProductId").map((productId,i)=>({productId,quantity:Number(f.getAll("lossQuantity")[i])})),
         method: val("method"),
         reference: val("reference"),
-        detail: val("detail"),
+        detail: [val("detail"),val("lossReason")].filter(Boolean).join(" · "),
       };
     if (type === "receipt")
       body = {
@@ -1823,18 +1824,9 @@ function OperationModal({
                       type="number"
                       min="0"
                       step="0.01"
+                      max={total / 100}
                       value={digital}
                       onChange={(e) => setDigital(numericText(e.target.value))}
-                    />
-                  </label>
-                  <label>
-                    Venta pendiente de cobro (S/)
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={debt}
-                      onChange={(e) => setDebt(numericText(e.target.value))}
                     />
                   </label>
                   <label>
@@ -1852,22 +1844,19 @@ function OperationModal({
                     placeholder="Código de Yape o transferencia"
                   />
                 </div>
+                <SaleLosses products={products} />
                 <Field
-                  label="Detalle / motivo de deuda"
+                  label="Detalle de la venta"
                   name="detail"
-                  required={Number(debt) > 0}
-                  placeholder="Productos vendidos, cliente u observaciones"
+                  required={false}
+                  placeholder="Cliente u observaciones de la venta"
                 />
                 <div className="info-message">
                   Efectivo por recibir:{" "}
                   <strong>
-                    {money(
-                      total -
-                        Math.round(Number(digital) * 100) -
-                        Math.round(Number(debt) * 100),
-                    )}
+                    {Number(digital) * 100 > total ? "El pago digital supera la facturación" : money(total - Math.round(Number(digital) * 100))}
                   </strong>
-                  . La venta descontará stock al guardar.
+                  . Se descontarán del stock las unidades vendidas y las perdidas, una sola vez.
                 </div>
               </>
             )}

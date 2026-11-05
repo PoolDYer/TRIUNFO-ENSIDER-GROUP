@@ -17,6 +17,7 @@ export default function FinancialGroups({ totals: t, period }: {
       ["Gastos operativos", t.operating],
       ["Gastos fijos", t.fixed],
       ["Deudas de ventas y descuentos de caja", t.debt],
+      ["Pérdida de productos (valor de venta)", t.productLossAmount],
     ] },
     { title: "Saldos de caja", rows: [
       ["Total de caja según ejemplo", t.excelCash],

@@ -105,4 +105,12 @@ CREATE TABLE IF NOT EXISTS receipt_items (
  PRIMARY KEY(receipt_id,product_id)
 );
 CREATE INDEX IF NOT EXISTS receipt_items_product_idx ON receipt_items(product_id);
+CREATE TABLE IF NOT EXISTS sale_losses (
+ sale_id uuid NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+ product_id uuid NOT NULL REFERENCES products(id),
+ code text NOT NULL, name text NOT NULL, quantity integer NOT NULL CHECK(quantity > 0),
+ unit_price bigint NOT NULL CHECK(unit_price >= 0), purchase_price bigint CHECK(purchase_price >= 0),
+ PRIMARY KEY(sale_id,product_id)
+);
+CREATE INDEX IF NOT EXISTS sale_losses_product_idx ON sale_losses(product_id);
 `;

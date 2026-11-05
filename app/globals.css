@@ -1946,6 +1946,14 @@ td small {
   .profit-day { grid-template-columns: 100px minmax(0,1fr); }
   .profit-day > strong { grid-column: 1 / -1; }
 }
+.sale-losses { border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.sale-losses h3, .sale-losses p { margin: 0; }
+.sale-losses p, .sale-losses small { font-size: 15px; line-height: 1.6; }
+.loss-line { display: grid; grid-template-columns: minmax(150px,1fr) 110px auto auto; gap: 12px; align-items: end; }
+@media (max-width: 650px) {
+  .loss-line { grid-template-columns: 1fr 1fr; }
+  .loss-line > label:first-child { grid-column: 1 / -1; }
+}
 .google-help {
   max-width: 860px;
   margin: 50px auto;

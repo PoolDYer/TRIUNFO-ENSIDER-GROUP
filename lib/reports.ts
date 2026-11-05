@@ -33,6 +33,7 @@ export async function report(
   period: string,
 ) {
   const p = [start, end];
+  const losses = await c.query("SELECT COALESCE(sum(l.quantity*l.unit_price),0) AS amount FROM sale_losses l JOIN sales s ON s.id=l.sale_id WHERE s.date BETWEEN $1 AND $2",p);
   // Aggregate each ledger independently to avoid multiplying sales by expense rows.
   const sales = await c.query(
     "SELECT COALESCE(sum(total),0) AS billing,COALESCE(sum(digital),0) AS digital,COALESCE(sum(debt),0) AS debt,count(*)::int AS count FROM sales WHERE date BETWEEN $1 AND $2",
@@ -90,6 +91,7 @@ export async function report(
     period,
     totals: {
       ...totals,
+      productLossAmount: Number(losses.rows[0].amount),
       cashReceipts: s.billing - s.digital - s.debt,
       salesCount: s.count,
       bankIncome: Number(bank.rows[0].income),

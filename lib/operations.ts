@@ -14,6 +14,7 @@ import {
 import { hashPassword } from "./password";
 import { financingInterest } from "./financing";
 import { registerReceiptOrder } from "./receipt-order";
+import { registerSale } from "./register-sale";
 const detail = z.string().trim().min(1).max(500);
 const id = z.string().uuid();
 const base = { id, date: dateSchema };
@@ -24,90 +25,7 @@ function admin(u: User) {
 export async function operate(c: DB, u: User, action: string, input: unknown) {
   let entity = "";
   if (action === "sale") {
-    const p = z
-      .object({
-        ...base,
-        detail: z.string().trim().max(500).default(""),
-        items: z
-          .array(
-            z.object({
-              productId: id,
-              quantity: quantitySchema,
-              unitPrice: moneySchema,
-            }),
-          )
-          .min(1)
-          .max(50),
-        digital: moneySchema,
-        debt: moneySchema,
-        method: z.enum(["YAPE", "TRANSFER", "NONE"]),
-        reference: z.string().trim().max(120),
-      })
-      .parse(input);
-    if (new Set(p.items.map((i) => i.productId)).size !== p.items.length)
-      throw new AppError(
-        "Agrupa las cantidades de cada producto en una sola línea.",
-      );
-    const total = p.items.reduce(
-      (s, i) => s + cents(i.unitPrice) * i.quantity,
-      0,
-    );
-    const digital = cents(p.digital),
-      debt = cents(p.debt),
-      cash = total - digital - debt;
-    if (!Number.isSafeInteger(total) || total <= 0 || cash < 0)
-      throw new AppError(
-        "Revisa los importes: los pagos y deudas no pueden superar la facturación ni los límites de precisión.",
-      );
-    if (digital > 0 && (p.method === "NONE" || !p.reference))
-      throw new AppError("Indica el medio digital y su código de operación.");
-    if (debt > 0 && !p.detail)
-      throw new AppError(
-        "Indica el motivo o cliente de la deuda en el detalle.",
-      );
-    await c.query(
-      "INSERT INTO sales(id,date,detail,cash,digital,debt,method,reference,total,user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
-      [
-        p.id,
-        p.date,
-        p.detail,
-        cash,
-        digital,
-        debt,
-        digital ? p.method : "NONE",
-        p.reference,
-        total,
-        u.id,
-      ],
-    );
-    // Stable lock order prevents deadlocks when two sellers sell the same products.
-    for (const i of [...p.items].sort((a, b) =>
-      a.productId.localeCompare(b.productId),
-    )) {
-      const { rows } = await c.query(
-        "UPDATE products SET stock=stock-$1 WHERE id=$2 AND active=true AND stock >= $1 RETURNING code,name,purchase_price",
-        [i.quantity, i.productId],
-      );
-      if (!rows[0])
-        throw new AppError(
-          "Stock insuficiente o producto desactivado. Actualiza los productos e inténtalo otra vez.",
-          409,
-        );
-      await c.query(
-        "INSERT INTO sale_items(id,sale_id,product_id,code,name,quantity,unit_price,purchase_price) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
-        [
-          randomUUID(),
-          p.id,
-          i.productId,
-          rows[0].code,
-          rows[0].name,
-          i.quantity,
-          cents(i.unitPrice),
-          rows[0].purchase_price,
-        ],
-      );
-    }
-    entity = p.id;
+    entity = await registerSale(c,u,input);
   } else if (action === "receiptOrder") {
     entity = await registerReceiptOrder(c,u,input);
   } else if (action === "receipt") {
@@ -262,7 +180,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
   } else if (action === "productDelete") {
     admin(u);
     const p = z.object({ id }).parse(input);
-    const history = await c.query("SELECT 1 FROM sale_items WHERE product_id=$1 UNION ALL SELECT 1 FROM receipts WHERE product_id=$1 UNION ALL SELECT 1 FROM receipt_items WHERE product_id=$1 LIMIT 1", [p.id]);
+    const history = await c.query("SELECT 1 FROM sale_items WHERE product_id=$1 UNION ALL SELECT 1 FROM receipts WHERE product_id=$1 UNION ALL SELECT 1 FROM sale_losses WHERE product_id=$1 UNION ALL SELECT 1 FROM receipt_items WHERE product_id=$1 LIMIT 1", [p.id]);
     if (history.rows.length) throw new AppError("El producto tiene ventas o entradas registradas. Desactívalo para conservar su historial.",409);
     const result = await c.query("DELETE FROM products WHERE id=$1 RETURNING id",[p.id]);
     if (!result.rows.length) throw new AppError("El producto ya no existe.",404);

@@ -91,7 +91,11 @@ export async function GET(req: Request) {
     ).rows;
     const sales = (
       await db.query(
-        `SELECT s.*,u.name AS user_name, (SELECT json_agg(json_build_object('name',i.name,'quantity',i.quantity,'unit_price',i.unit_price)) FROM sale_items i WHERE i.sale_id=s.id) AS items FROM sales s JOIN users u ON u.id=s.user_id WHERE s.date BETWEEN $1 AND $2 ORDER BY s.created_at DESC LIMIT 200`,
+        `SELECT s.*,u.name AS user_name,
+         (SELECT json_agg(json_build_object('name',i.name,'quantity',i.quantity,'unit_price',i.unit_price)) FROM sale_items i WHERE i.sale_id=s.id) AS items,
+         (SELECT json_agg(json_build_object('product_id',l.product_id,'name',l.name,'quantity',l.quantity,'unit_price',l.unit_price)) FROM sale_losses l WHERE l.sale_id=s.id) AS losses,
+         COALESCE((SELECT sum(l.quantity*l.unit_price) FROM sale_losses l WHERE l.sale_id=s.id),0) AS loss_amount
+         FROM sales s JOIN users u ON u.id=s.user_id WHERE s.date BETWEEN $1 AND $2 ORDER BY s.created_at DESC LIMIT 200`,
         [start, end],
       )
     ).rows;
