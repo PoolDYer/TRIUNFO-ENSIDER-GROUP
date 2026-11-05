@@ -1922,6 +1922,20 @@ td small {
   .financial-row { flex-wrap: wrap; gap: 4px; }
   .financial-row dd { margin-left: auto; }
 }
+.expense-legend { display: flex; flex-wrap: wrap; gap: 18px; padding: 0 23px 18px; font-size: 15px; }
+.expense-legend > span { display: inline-flex; align-items: center; gap: 7px; }
+.expense-legend i { width: 12px; height: 12px; border-radius: 3px; }
+.expense-chart .operating { background: #ec681b; }
+.expense-chart .fixed { background: #65758b; }
+.expense-days { padding: 0 23px 16px; }
+.expense-day { display: grid; grid-template-columns: 80px minmax(0,1fr) auto; align-items: center; gap: 8px 16px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 16px; }
+.expense-track { display: flex; height: 18px; background: #f0f2f5; border-radius: 4px; overflow: hidden; }
+.expense-day small { grid-column: 2 / -1; color: #596472; font-size: 14px; }
+@media (max-width: 550px) {
+  .expense-day { grid-template-columns: 70px minmax(0,1fr); }
+  .expense-day > strong { grid-column: 2; }
+  .expense-day small { grid-column: 1 / -1; }
+}
 .google-help {
   max-width: 860px;
   margin: 50px auto;

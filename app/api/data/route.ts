@@ -5,6 +5,7 @@ import { AppError, requireUser } from "@/lib/auth";
 import { dateSchema, periodRange, today } from "@/lib/validation";
 import { report } from "@/lib/reports";
 import { financingReport } from "@/lib/financing";
+import { expenseDashboard } from "@/lib/expense-dashboard";
 const options = { headers: { "Cache-Control": "private, no-store" } };
 export const runtime = "nodejs";
 export async function GET(req: Request) {
@@ -123,6 +124,7 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         summary,
+        ...(view === "expenses" ? { expenseDashboard: await expenseDashboard(db,start,end) } : {}),
         products,
         sales,
         expenses,

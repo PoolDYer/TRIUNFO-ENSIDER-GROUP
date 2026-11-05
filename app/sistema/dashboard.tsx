@@ -32,6 +32,7 @@ import GoogleSheetsExport from "./google-sheets-export";
 import Financing from "./financing";
 import ReceiptFields from "./receipt-fields";
 import FinancialGroups from "./financial-groups";
+import ExpenseDashboard from "./expense-dashboard";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -801,6 +802,7 @@ export default function Dashboard({ user }: { user: User }) {
               )}
               {view === "expenses" && (
                 <>
+                  {data.expenseDashboard && <ExpenseDashboard data={data.expenseDashboard} period={period} />}
                   <div className="small-grid">
                     <button
                       className="quick-panel"
