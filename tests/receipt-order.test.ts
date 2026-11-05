@@ -14,7 +14,7 @@ async function fixture() {
   const u: User = {
     id: randomUUID(),
     role: "SELLER",
-    name: "Vendedor",
+    name: "Administrador",
     email: "ventas@triunfoensidergroup",
     must_change_password: false,
   };

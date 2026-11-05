@@ -13,7 +13,7 @@ export function googleConfig() {
     encodedKey = process.env.GOOGLE_TOKEN_ENCRYPTION_KEY;
   if (!clientId || !clientSecret || !redirectUri || !encodedKey)
     throw new AppError(
-      "El administrador debe completar la configuración de Google Sheets antes de conectarlo.",
+      "El dueño debe completar la configuración de Google Sheets antes de conectarlo.",
       503,
     );
   const key = Buffer.from(encodedKey, "base64");
@@ -74,7 +74,7 @@ export function openSecret(value: string, key = googleConfig().key) {
     );
   } catch {
     throw new AppError(
-      "La conexión de Google no se puede leer. El administrador debe volver a conectarla.",
+      "La conexión de Google no se puede leer. El dueño debe volver a conectarla.",
       503,
     );
   }

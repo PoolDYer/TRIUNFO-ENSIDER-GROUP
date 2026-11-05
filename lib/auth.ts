@@ -29,7 +29,7 @@ export async function requireUser(admin = false, allowPasswordChange = false) {
   const u = await currentUser();
   if (!u) throw new AppError("Inicia sesión para continuar.", 401);
   if (admin && u.role !== "ADMIN")
-    throw new AppError("Solo el administrador tiene acceso.", 403);
+    throw new AppError("Solo el dueño tiene acceso.", 403);
   if (!allowPasswordChange && u.must_change_password)
     throw new AppError("Cambia tu contraseña temporal para continuar.", 403);
   return u;

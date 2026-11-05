@@ -158,7 +158,7 @@ export default function GoogleSheetsExport({
                   <p className="info-message">
                     {admin
                       ? "Completa la configuración inicial y después conecta la cuenta de Google donde se guardarán los reportes."
-                      : "Solicita al administrador que configure y conecte la cuenta de Google."}
+                      : "Solicita al dueño que configure y conecte la cuenta de Google."}
                   </p>
                   {admin && (
                     <a
@@ -176,8 +176,8 @@ export default function GoogleSheetsExport({
                 <>
                   <p>
                     {admin
-                      ? "Conecta la cuenta de Google del administrador donde se guardarán los reportes."
-                      : "El administrador debe conectar su cuenta de Google antes de generar enlaces."}
+                      ? "Conecta la cuenta de Google del dueño donde se guardarán los reportes."
+                      : "El dueño debe conectar su cuenta de Google antes de generar enlaces."}
                   </p>
                   {admin && (
                     <button

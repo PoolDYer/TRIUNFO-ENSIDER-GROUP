@@ -20,7 +20,7 @@ const id = z.string().uuid();
 const base = { id, date: dateSchema };
 function admin(u: User) {
   if (u.role !== "ADMIN")
-    throw new AppError("Solo el administrador tiene acceso.", 403);
+    throw new AppError("Solo el dueño tiene acceso.", 403);
 }
 export async function operate(c: DB, u: User, action: string, input: unknown) {
   let entity = "";
@@ -46,7 +46,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
     const product = await c.query("SELECT purchase_price FROM products WHERE id=$1 AND active=true FOR UPDATE", [p.productId]);
     if (!product.rows.length) throw new AppError("Producto no disponible.");
     if (product.rows[0].purchase_price === null)
-      throw new AppError("El administrador debe confirmar el precio unitario de compra antes de registrar la entrada.");
+      throw new AppError("El dueño debe confirmar el precio unitario de compra antes de registrar la entrada.");
     const orderCost = Number(product.rows[0].purchase_price) * p.quantity;
     if (!Number.isSafeInteger(orderCost) || orderCost < 0 || orderCost > 1000000000)
       throw new AppError("El costo calculado supera el máximo de S/ 10 000 000 por entrada.");
@@ -223,7 +223,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
     if (!rows.length) throw new AppError("El usuario ya no existe.", 404);
     if (rows[0].role !== "SELLER")
       throw new AppError(
-        "No se puede eliminar una cuenta de administrador.",
+        "No se puede eliminar una cuenta de dueño.",
         403,
       );
     await c.query(
@@ -242,7 +242,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       [p.id, p.active],
     );
     if (!result.rows.length)
-      throw new AppError("El vendedor ya no existe.", 404);
+      throw new AppError("El administrador ya no existe.", 404);
     await c.query("DELETE FROM sessions WHERE user_id=$1", [p.id]);
     entity = p.id;
   } else if (action === "resetPassword") {
@@ -255,7 +255,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       [p.id, await hashPassword(p.password)],
     );
     if (!result.rows.length)
-      throw new AppError("El vendedor ya no existe.", 404);
+      throw new AppError("El administrador ya no existe.", 404);
     await c.query("DELETE FROM sessions WHERE user_id=$1", [p.id]);
     entity = p.id;
   } else throw new AppError("Operación no reconocida.");

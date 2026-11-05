@@ -14,7 +14,7 @@ export default async function GoogleHelp() {
       <h1>Conectar los reportes con Google Sheets</h1>
       <p>
         La conexión guarda los reportes en una cuenta de Google del
-        administrador. El acceso al sistema sigue usando tus correos y
+        dueño. El acceso al sistema sigue usando tus correos y
         contraseñas internos.
       </p>
       <ol>
@@ -36,7 +36,7 @@ export default async function GoogleHelp() {
         <li>
           En «Google Auth Platform», configura el nombre de la aplicación y tus
           datos de contacto. Si eliges audiencia externa y modo de prueba, añade
-          la cuenta de Google del administrador como usuario de prueba.
+          la cuenta de Google del dueño como usuario de prueba.
         </li>
         <li>
           Crea un cliente OAuth de tipo <strong>Aplicación web</strong>. Añade
@@ -60,13 +60,13 @@ export default async function GoogleHelp() {
         <li>
           Reinicia el servidor. En «Generar enlace a Google Sheets», pulsa{" "}
           <strong>Conectar Google</strong> y autoriza la cuenta del
-          administrador. Después ya podrás generar el enlace del reporte.
+          dueño. Después ya podrás generar el enlace del reporte.
         </li>
       </ol>
       <p>
         Los permisos solicitados se limitan a los archivos creados o utilizados
         por esta aplicación. Las hojas no se publican automáticamente. Si los
-        vendedores necesitan abrirlas, el administrador deberá compartirlas con
+        administradores necesitan abrirlas, el dueño deberá compartirlas con
         sus cuentas de Google reales.
       </p>
       <p>

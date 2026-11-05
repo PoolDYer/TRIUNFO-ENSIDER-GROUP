@@ -28,6 +28,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { User } from "@/lib/auth";
+import { roleLabels } from "@/lib/roles";
 import GoogleSheetsExport from "./google-sheets-export";
 import Financing from "./financing";
 import ReceiptFields from "./receipt-fields";
@@ -365,7 +366,7 @@ export default function Dashboard({ user }: { user: User }) {
         <div className="sidebar-bottom">
           <div className="role-note">
             <ShieldCheck size={16} />
-            {admin ? "Acceso de administrador" : "Acceso de vendedor"}
+            {admin ? "Acceso de dueño" : "Acceso de administrador"}
           </div>
           <button
             className="profile"
@@ -503,7 +504,7 @@ export default function Dashboard({ user }: { user: User }) {
                   disabled={(data?.users?.length ?? 0) >= 10}
                   onClick={() => setModal({ type: "user" })}
                 >
-                  <Plus size={17} /> Crear vendedor
+                  <Plus size={17} /> Crear administrador
                 </button>
               )}
             </div>
@@ -736,7 +737,7 @@ export default function Dashboard({ user }: { user: User }) {
                       <Package size={22} />
                       <div>
                         <strong>{low.length} productos con stock bajo</strong>
-                        <span>Umbral definido por el administrador</span>
+                        <span>Umbral definido por el dueño</span>
                       </div>
                     </div>
                   </div>
@@ -914,7 +915,7 @@ export default function Dashboard({ user }: { user: User }) {
                       label="Ingresos del período"
                       value={money(t.bankIncome)}
                       icon={ArrowDownLeft}
-                      note="Ingresados por el administrador"
+                      note="Ingresados por el dueño"
                     />
                     <Stat
                       label="Retiros / disposición"
@@ -1109,7 +1110,7 @@ export default function Dashboard({ user }: { user: User }) {
                 <>
                   <div className="restricted-note">
                     <ShieldCheck size={17} /> Información exclusiva del
-                    administrador
+                    dueño
                   </div>
                   <div className="product-totals">
                     <div>
@@ -1271,7 +1272,7 @@ export default function Dashboard({ user }: { user: User }) {
                         <td>{r.email}</td>
                         <td>
                           <span className="badge">
-                            {r.role === "ADMIN" ? "Administrador" : "Vendedor"}
+                            {roleLabels[r.role as keyof typeof roleLabels]}
                           </span>
                         </td>
                         <td>
@@ -1321,7 +1322,7 @@ export default function Dashboard({ user }: { user: User }) {
                   </Table>
                   <p className="panel-hint">
                     Las cuentas desactivadas siguen contando dentro del máximo
-                    de 10. Eliminar un vendedor libera su cupo y conserva el
+                    de 10. Eliminar un administrador libera su cupo y conserva el
                     historial de sus operaciones.
                   </p>
                 </section>
@@ -1522,7 +1523,7 @@ function OperationModal({
         ? "Ingreso de cuenta corriente"
         : "Retiro de cuenta corriente",
     product: r ? "Editar producto" : "Nuevo producto",
-    user: "Crear vendedor",
+    user: "Crear administrador",
     resetPassword: "Restablecer contraseña",
     userDelete: "Eliminar usuario",
     password: forced ? "Configura tu contraseña" : "Cambiar contraseña",
@@ -1989,13 +1990,13 @@ function OperationModal({
             )}
             {type === "user" && (
               <>
-                <Field label="Nombre del vendedor" name="name" />
+                <Field label="Nombre del administrador" name="name" />
                 <label>
                   Correo de acceso
                   <div className="email-access-field">
                     <input
                       name="username"
-                      aria-label="Nombre de usuario del vendedor"
+                      aria-label="Nombre de usuario del administrador"
                       aria-describedby="seller-email-domain"
                       placeholder="nombre"
                       pattern={"[A-Za-z0-9._\\-]+"}
@@ -2014,7 +2015,7 @@ function OperationModal({
                   type="password"
                 />
                 <p className="info-message">
-                  El vendedor deberá cambiar esta contraseña al iniciar sesión.
+                  El administrador deberá cambiar esta contraseña al iniciar sesión.
                 </p>
               </>
             )}

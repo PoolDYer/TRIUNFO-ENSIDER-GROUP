@@ -22,8 +22,8 @@ export async function POST(req: Request) {
     if (!status.connected)
       throw new AppError(
         status.configured
-          ? "El administrador debe conectar Google Sheets antes de generar enlaces."
-          : "Falta configurar la conexión con Google Sheets. El administrador tiene las instrucciones en la ayuda.",
+          ? "El dueño debe conectar Google Sheets antes de generar enlaces."
+          : "Falta configurar la conexión con Google Sheets. El dueño tiene las instrucciones en la ayuda.",
         409,
       );
     return NextResponse.json(

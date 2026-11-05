@@ -41,7 +41,7 @@ export async function GET(req: Request) {
     if (view === "products") {
       if (u.role !== "ADMIN")
         throw new AppError(
-          "Solo el administrador tiene acceso a la lista de productos.",
+          "Solo el dueño tiene acceso a la lista de productos.",
           403,
         );
       const products = await db.query("SELECT * FROM products ORDER BY code");
@@ -49,7 +49,7 @@ export async function GET(req: Request) {
     }
     if (view === "users") {
       if (u.role !== "ADMIN")
-        throw new AppError("Solo el administrador tiene acceso.", 403);
+        throw new AppError("Solo el dueño tiene acceso.", 403);
       return NextResponse.json(
         {
           users: (
@@ -63,7 +63,7 @@ export async function GET(req: Request) {
     }
     if (view === "audit") {
       if (u.role !== "ADMIN")
-        throw new AppError("Solo el administrador tiene acceso.", 403);
+        throw new AppError("Solo el dueño tiene acceso.", 403);
       return NextResponse.json(
         {
           audit: (

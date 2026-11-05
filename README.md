@@ -1,21 +1,25 @@
 # Triunfo Ensider Group
 
-Sistema web administrativo de inventario, ventas y caja, preparado para Vercel con Next.js, TypeScript y PostgreSQL. Autenticación propia con correo y contraseña, sin proveedores externos de identidad ni envío de correos. La exportación a Google Sheets usa una conexión OAuth independiente, autorizada por el administrador.
+Sistema web administrativo de inventario, ventas y caja, preparado para Vercel con Next.js, TypeScript y PostgreSQL. Autenticación propia con correo y contraseña, sin proveedores externos de identidad ni envío de correos. La exportación a Google Sheets usa una conexión OAuth independiente, autorizada por el dueño.
 
 ## Funciones implementadas
 
 - Presentación de la comercializadora y acceso al sistema con el logo original.
-- Un administrador y tres vendedores iniciales. El administrador puede crear vendedores hasta un máximo de diez cuentas, desactivar cuentas, restablecer contraseñas y eliminar vendedores con confirmación. La eliminación cierra sus sesiones, libera el cupo y conserva el historial de sus operaciones. No se permite eliminar al administrador.
+- Un dueño y tres administradores iniciales. El dueño puede crear administradores hasta un máximo de diez cuentas, desactivar cuentas, restablecer contraseñas y eliminar administradores con confirmación. La eliminación cierra sus sesiones, libera el cupo y conserva el historial de sus operaciones. No se permite eliminar al dueño.
 - Correos internos con el formato exacto `usuario@triunfoensidergroup`. No necesitan buzón ni DNS; son identificadores internos.
 - Cambio obligatorio de contraseña temporal, contraseñas con scrypt y salt, sesiones revocables de ocho horas en cookies HttpOnly/SameSite y Secure en producción. Límite persistente de diez intentos de acceso por cuenta en quince minutos.
 - Venta de varios productos, cantidades y precios ingresados manualmente, subtotales automáticos, pago combinado efectivo/Yape/transferencia y deuda pendiente de cobro. Código de operación digital, detalle, fecha, hora de registro y usuario responsable.
 - Descuento de stock atómico con bloqueo de filas. Reversión completa si falta stock. Identificadores únicos impiden aplicar dos veces la misma venta por reintento.
 - Entradas con proveedor, cantidad, fecha, costo del pedido, modalidad contado/crédito, monto pagado y saldo.
 - Gastos operativos y fijos con descripción, fecha, monto y usuario. Apertura física de caja única por fecha. Deudas manuales, depósitos y efectivo entregado.
-- Cuenta corriente con ingresos manuales exclusivos del administrador, retiros con motivo, consolidación semanal y acumulado histórico.
+- Cuenta corriente con ingresos manuales exclusivos del dueño, retiros con motivo, consolidación semanal y acumulado histórico.
 - Inventarios y reportes diarios, semanales y mensuales, cantidades vendidas por producto y precio histórico, ingresos, egresos y caja. Generación de enlaces a reportes en Google Sheets e impresión.
-- Lista de productos exclusiva del administrador: stock, precio de venta, costo de compra, capital, inversión y ganancia potencial. Los vendedores disponen solo del selector operativo necesario para vender y registrar entradas, sin costos ni rentabilidad del catálogo.
+- Lista de productos exclusiva del dueño: stock, precio de venta, costo de compra, capital, inversión y ganancia potencial. Los administradores disponen solo del selector operativo necesario para vender y registrar entradas, sin costos ni rentabilidad del catálogo.
 - Auditoría de las operaciones y conservación de las entradas/ventas del Excel original como referencia.
+
+## Nombres de roles
+
+El rol **Dueño** tiene todos los privilegios. El resto de cuentas tienen el rol **Administrador** y conservan los permisos operativos anteriores. Los identificadores almacenados `ADMIN` (Dueño) y `SELLER` (Administrador) se conservan para mantener compatibles las cuentas existentes, sin alterar correos, contraseñas o sesiones. La aplicación muestra los nombres «Dueño» y «Administrador».
 
 ## Base de datos recomendada
 
@@ -39,7 +43,7 @@ Abrir `http://127.0.0.1:3000`. Las credenciales locales generadas están en `.wo
 
 No ejecutar dos procesos que abran el mismo directorio PGlite simultáneamente: detener el servidor antes de ejecutar `db:setup`. En producción se usa PostgreSQL real con conexiones independientes.
 
-Al actualizar una instalación existente, ejecutar `npm run db:setup` antes de iniciar la nueva versión. La preparación aplica también la migración para eliminar vendedores conservando sus operaciones: añade la fecha de eliminación y permite reutilizar el correo en una cuenta nueva. No cambia las contraseñas ni los datos existentes.
+Al actualizar una instalación existente, ejecutar `npm run db:setup` antes de iniciar la nueva versión. La preparación aplica también la migración para eliminar administradores conservando sus operaciones: añade la fecha de eliminación y permite reutilizar el correo en una cuenta nueva. No cambia las contraseñas ni los datos existentes.
 
 ## Preparación y despliegue en Vercel
 
@@ -48,7 +52,7 @@ Al actualizar una instalación existente, ejecutar `npm run db:setup` antes de i
 3. Definir cuatro contraseñas temporales distintas: `INITIAL_ADMIN_PASSWORD`, `INITIAL_SELLER_1_PASSWORD`, `INITIAL_SELLER_2_PASSWORD`, `INITIAL_SELLER_3_PASSWORD`. Mínimo doce caracteres. Ejecutar `npm run db:setup` una sola vez para preparar las tablas e importar el inventario. El proceso es transaccional e idempotente: repetirlo no reemplaza contraseñas, stock ni registros existentes.
 4. Importar el repositorio `PoolDYer/TRIUNFO-ENSIDER-GROUP` en Vercel. Seleccionar Next.js, raíz del repositorio, instalación `npm ci`, construcción `npm run build`, Node.js 22 o 24.
 5. En Vercel configurar `DATABASE_URL`, `LOCAL_DATABASE=false` y, opcionalmente, `APP_URL` con el origen HTTPS definitivo. Para Google Sheets, añadir las cuatro variables `GOOGLE_*` descritas más abajo. No habilitar la base local. Las cuatro contraseñas de inicialización no son necesarias en el despliegue después de preparar la base.
-6. Ubicar funciones y base en regiones cercanas. Desplegar e ingresar con las cuentas iniciales. Cada usuario deberá cambiar su contraseña antes de operar. El administrador puede recuperar el acceso de los vendedores desde Usuarios.
+6. Ubicar funciones y base en regiones cercanas. Desplegar e ingresar con las cuentas iniciales. Cada usuario deberá cambiar su contraseña antes de operar. El dueño puede recuperar el acceso de los administradores desde Usuarios.
 7. Ejecutar las pruebas de acceso y carga sobre el despliegue con la base definitiva. Activar las copias de seguridad del proveedor antes de comenzar a registrar operaciones reales.
 
 No se crearon servicios de nube ni un despliegue Vercel: se requiere la cuenta y la conexión PostgreSQL del propietario. No hay contraseñas predeterminadas de producción en el código.
@@ -85,7 +89,7 @@ El usuario confirmó mantener **ambas cajas** ante la discrepancia de la fórmul
 
 La apertura representa efectivo físico inicial del día, no un ingreso. En una vista de varios días se muestra la suma de aperturas registradas, expresamente rotulada; no constituye un saldo arrastrado automáticamente. Si una deuda ya está asociada a una venta, no debe repetirse como deuda manual.
 
-Los retiros se conservan aparte de los ingresos diarios: no se altera el ingreso registrado. Su descuento se aplica en la consolidación. Los Yapes de las ventas no se insertan automáticamente en cuenta corriente, para evitar duplicar movimientos manuales. Las compras registran costo y saldo del proveedor; si se pagan con efectivo de caja, registrar el egreso correspondiente en Gastos. El costo de catálogo se mantiene manualmente por el administrador.
+Los retiros se conservan aparte de los ingresos diarios: no se altera el ingreso registrado. Su descuento se aplica en la consolidación. Los Yapes de las ventas no se insertan automáticamente en cuenta corriente, para evitar duplicar movimientos manuales. Las compras registran costo y saldo del proveedor; si se pagan con efectivo de caja, registrar el egreso correspondiente en Gastos. El costo de catálogo se mantiene manualmente por el dueño.
 
 Los registros operativos son históricos y no se eliminan desde la interfaz. La auditoría registra usuario, operación, referencia y hora. Los listados operativos muestran hasta 200 registros recientes del período; los totales y exportaciones consolidadas incluyen todas las operaciones. El consolidado bancario muestra las últimas 52 semanas con acumulado completo.
 
@@ -98,7 +102,7 @@ npm run build
 npm audit --omit=dev
 ```
 
-Las pruebas de negocio cubren fórmulas del Excel, fechas, contraseñas, ventas transaccionales, reversión, historial de precios, duplicados, pagos inválidos, permisos, entradas, cuenta corriente, gastos, caja, máximo de cuentas y eliminación de vendedores con conservación del historial. Incluyen diez intentos simultáneos de venta sobre stock limitado. Estas pruebas usan un motor PostgreSQL embebido y no sustituyen una prueba con múltiples conexiones PostgreSQL reales.
+Las pruebas de negocio cubren fórmulas del Excel, fechas, contraseñas, ventas transaccionales, reversión, historial de precios, duplicados, pagos inválidos, permisos, entradas, cuenta corriente, gastos, caja, máximo de cuentas y eliminación de administradores con conservación del historial. Incluyen diez intentos simultáneos de venta sobre stock limitado. Estas pruebas usan un motor PostgreSQL embebido y no sustituyen una prueba con múltiples conexiones PostgreSQL reales.
 
 Se verificaron además por HTTP los flujos de autenticación, revocación, permisos de API, importación, ventas y reportes, origen de solicitudes y exportaciones; diez consultas simultáneas funcionaron en desarrollo local. Se revisó en navegador el panel, el registro de ventas y la actualización de existencias.
 
@@ -130,7 +134,7 @@ Actualizar el esquema con `npm run db:migrate` antes de iniciar esta versión; d
 
 En Control de entrada, el distribuidor es **CORP. G.S. S.A.** Marca los productos del pedido y edita la cantidad de cada uno. El subtotal de cada producto es cantidad × precio unitario de compra. Al contado, el monto pagado equivale al total. A crédito, se aplica un interés fijo del 2 % una sola vez al total del pedido: S/ 200 genera una deuda de S/ 204. Al guardar se actualizan todos los stocks y se crea una sola deuda por pedido. Los abonos se registran en Financiamiento → Pagos. El servidor calcula los importes desde el catálogo y conserva el detalle y los precios históricos de cada pedido.
 
-Financiamiento aparece debajo de Gastos y caja y muestra todos los créditos y pagos, sin filtros diarios, semanales ni mensuales. Cada registro conserva su fecha. Se muestran deuda total, pagos acumulados y saldo actual. No se permiten pagos anteriores al crédito ni que superen el saldo; los abonos simultáneos se validan bloqueando la deuda. Tanto administradores como vendedores pueden registrar entradas y pagos.
+Financiamiento aparece debajo de Gastos y caja y muestra todos los créditos y pagos, sin filtros diarios, semanales ni mensuales. Cada registro conserva su fecha. Se muestran deuda total, pagos acumulados y saldo actual. No se permiten pagos anteriores al crédito ni que superen el saldo; los abonos simultáneos se validan bloqueando la deuda. Tanto dueños como administradores pueden registrar entradas y pagos.
 
 Para actualizar una instalación existente, detener el servidor local y ejecutar `npm run db:migrate`; después volver a iniciarlo. Este comando actualiza únicamente el esquema y conserva cuentas e inventario sin reimportar productos. Los créditos anteriores conservan el saldo original del pedido, sin interés retroactivo. Los pagos de financiamiento no descuentan caja automáticamente; registrar la salida de caja por separado cuando corresponda.
 
@@ -138,11 +142,11 @@ Para actualizar una instalación existente, detener el servidor local y ejecutar
 
 El botón «Generar enlace a Google Sheets» sustituye la descarga CSV. Crea una copia del reporte del período seleccionado, con tres pestañas: Resumen financiero, Productos vendidos y Ventas por día. La hoja contiene importes numéricos con formato de soles, fechas y texto literal, sin ejecutar nombres de productos como fórmulas. La generación se audita y una solicitud repetida no vuelve a crear la misma hoja.
 
-La aplicación está implementada, pero la creación de hojas reales requiere configurar un proyecto propio de Google y autorizar la cuenta del administrador. No se incluyen credenciales de Google en el repositorio. La ayuda está disponible dentro del sistema, para el administrador, en `/ayuda/google-sheets`.
+La aplicación está implementada, pero la creación de hojas reales requiere configurar un proyecto propio de Google y autorizar la cuenta del dueño. No se incluyen credenciales de Google en el repositorio. La ayuda está disponible dentro del sistema, para el dueño, en `/ayuda/google-sheets`.
 
-1. Entrar en [Google Cloud Console](https://console.cloud.google.com/) con la cuenta del administrador y crear o seleccionar un proyecto.
+1. Entrar en [Google Cloud Console](https://console.cloud.google.com/) con la cuenta del dueño y crear o seleccionar un proyecto.
 2. En APIs y servicios, habilitar **Google Sheets API**.
-3. En Google Auth Platform, configurar la aplicación, sus datos de contacto y audiencia. Con cuenta personal, seleccionar audiencia externa; en modo de prueba, añadir el correo Google del administrador como usuario de prueba.
+3. En Google Auth Platform, configurar la aplicación, sus datos de contacto y audiencia. Con cuenta personal, seleccionar audiencia externa; en modo de prueba, añadir el correo Google del dueño como usuario de prueba.
 4. Crear un cliente OAuth de tipo **Aplicación web**. Registrar exactamente `http://127.0.0.1:3000/api/google/callback` para desarrollo. Registrar también `https://TU-DOMINIO/api/google/callback` cuando exista el dominio definitivo en Vercel. Las direcciones localhost y 127.0.0.1 son diferentes: usar el mismo origen al abrir el sistema y al configurar el retorno.
 5. Guardar el identificador y secreto del cliente en `.env.local` para desarrollo, o en las variables de Vercel para producción. No pegarlos en chats ni subir archivos de credenciales a Git.
 
@@ -160,12 +164,12 @@ node -e "process.stdout.write(require('node:crypto').randomBytes(32).toString('b
 ```
 
 6. Con el servidor local detenido, ejecutar `npm run db:setup` para añadir las tablas de conexión y reportes; volver a iniciar el servidor. La migración no modifica inventario, cuentas ni contraseñas.
-7. Entrar como administrador. Abrir «Generar enlace a Google Sheets», pulsar **Conectar Google** y autorizar la cuenta donde se guardarán los reportes. Después seleccionar el período y pulsar **Generar enlace**.
+7. Entrar como dueño. Abrir «Generar enlace a Google Sheets», pulsar **Conectar Google** y autorizar la cuenta donde se guardarán los reportes. Después seleccionar el período y pulsar **Generar enlace**.
 
 El permiso solicitado es `drive.file`, limitado a archivos creados o utilizados con la aplicación. La biblioteca oficial de Google gestiona OAuth y la renovación del acceso; se comprueban estado, sesión, vencimiento y PKCE. El token de renovación se cifra con AES-256-GCM antes de almacenarlo y nunca se envía al navegador. No se guarda ninguna contraseña de Google.
 
-Las hojas se crean con los permisos predeterminados de la cuenta conectada y no se hacen públicas automáticamente. Para que un vendedor pueda abrir el enlace, el administrador debe compartirlo desde Google Sheets con su cuenta de Google real. Los correos internos `@triunfoensidergroup` no son cuentas Google. Generar un enlace no equivale a conceder acceso público ni a mantener el reporte sincronizado. El catálogo de compra e inversión exclusivo del administrador no se incluye en estas exportaciones.
+Las hojas se crean con los permisos predeterminados de la cuenta conectada y no se hacen públicas automáticamente. Para que un administrador pueda abrir el enlace, el dueño debe compartirlo desde Google Sheets con su cuenta de Google real. Los correos internos `@triunfoensidergroup` no son cuentas Google. Generar un enlace no equivale a conceder acceso público ni a mantener el reporte sincronizado. El catálogo de compra e inversión exclusivo del dueño no se incluye en estas exportaciones.
 
-En modo de prueba de Google, la autorización offline puede vencer a los siete días; revisar el estado de publicación y los requisitos de Google para usar la conexión de manera estable. Ante una autorización revocada o vencida, el administrador puede conectar nuevamente la cuenta desde el mismo botón. Si Google no confirma la creación por un corte de red, revisar la cuenta conectada antes de iniciar una solicitud nueva.
+En modo de prueba de Google, la autorización offline puede vencer a los siete días; revisar el estado de publicación y los requisitos de Google para usar la conexión de manera estable. Ante una autorización revocada o vencida, el dueño puede conectar nuevamente la cuenta desde el mismo botón. Si Google no confirma la creación por un corte de red, revisar la cuenta conectada antes de iniciar una solicitud nueva.
 
 Las pruebas automatizadas validan datos, cifrado, estados OAuth, errores, permisos por solicitud y duplicados usando respuestas simuladas de Google. La prueba con una cuenta real queda pendiente hasta configurar el cliente OAuth y autorizarlo. Referencias oficiales: [creación de hojas](https://developers.google.com/workspace/sheets/api/guides/create), [OAuth para servidores](https://developers.google.com/identity/protocols/oauth2/web-server), [permisos](https://developers.google.com/workspace/sheets/api/scopes).

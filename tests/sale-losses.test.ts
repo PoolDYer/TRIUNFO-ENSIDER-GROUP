@@ -11,7 +11,7 @@ import type {User} from "../lib/auth";
 
 async function fixture() {
  const pg=new PGlite();await pg.exec(schema);
- const u:User={id:randomUUID(),name:"Vendedor",email:"vendedor@triunfoensidergroup",role:"SELLER",must_change_password:false};
+ const u:User={id:randomUUID(),name:"Administrador",email:"administrador@triunfoensidergroup",role:"SELLER",must_change_password:false};
  await pg.query("INSERT INTO users(id,name,email,password_hash,role) VALUES($1,$2,$3,'test','SELLER')",[u.id,u.name,u.email]);
  const p=randomUUID(),q=randomUUID();
  await pg.query("INSERT INTO products(id,code,name,stock,sale_price,purchase_price) VALUES($1,'P1','Producto 1',10,1000,500),($2,'P2','Producto 2',10,2000,800)",[p,q]);

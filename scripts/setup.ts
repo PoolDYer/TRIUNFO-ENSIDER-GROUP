@@ -22,10 +22,10 @@ async function main() {
     const existing = await c.query("SELECT count(*)::int AS count FROM users");
     if (existing.rows[0].count === 0) {
       const accounts = [
-        ["Administrador", "admin", "INITIAL_ADMIN_PASSWORD", "ADMIN"],
-        ["Vendedor 1", "vendedor1", "INITIAL_SELLER_1_PASSWORD", "SELLER"],
-        ["Vendedor 2", "vendedor2", "INITIAL_SELLER_2_PASSWORD", "SELLER"],
-        ["Vendedor 3", "vendedor3", "INITIAL_SELLER_3_PASSWORD", "SELLER"],
+        ["Dueño", "admin", "INITIAL_ADMIN_PASSWORD", "ADMIN"],
+        ["Administrador 1", "vendedor1", "INITIAL_SELLER_1_PASSWORD", "SELLER"],
+        ["Administrador 2", "vendedor2", "INITIAL_SELLER_2_PASSWORD", "SELLER"],
+        ["Administrador 3", "vendedor3", "INITIAL_SELLER_3_PASSWORD", "SELLER"],
       ];
       for (const [name, email, key, role] of accounts) {
         const pass = passwordSchema.parse(process.env[key]);

@@ -15,7 +15,7 @@ export default function Login() {
         <p className="login-help">
           ¿Necesitas acceso o recuperar tu contraseña?
           <br />
-          Comunícate con el administrador.
+          Comunícate con el dueño.
         </p>
       </section>
       <div className="login-footer">Inventario y administración comercial</div>

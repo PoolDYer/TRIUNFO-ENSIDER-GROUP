@@ -20,7 +20,7 @@ async function fixture() {
   await pg.exec(schema);
   const user: User = {
     id: randomUUID(),
-    name: "Administrador",
+    name: "Dueño",
     email: "admin@triunfoensidergroup",
     role: "ADMIN",
     must_change_password: false,
@@ -61,12 +61,12 @@ const sale = (productId: string, quantity = 1) => ({
   reference: "",
 });
 
-test("Eliminar un vendedor cierra sesiones, preserva ventas y permite reutilizar su correo", async () => {
+test("Eliminar un administrador cierra sesiones, preserva ventas y permite reutilizar su correo", async () => {
   const f = await fixture();
   try {
     const sellerId = randomUUID();
     await f.c.query(
-      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Vendedor','nuevo@triunfoensidergroup','unused','SELLER')",
+      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Administrador','nuevo@triunfoensidergroup','unused','SELLER')",
       [sellerId],
     );
     await f.c.query(
@@ -101,7 +101,7 @@ test("Eliminar un vendedor cierra sesiones, preserva ventas y permite reutilizar
           "SELECT s.user_id,u.name FROM sales s JOIN users u ON u.id=s.user_id",
         )
       ).rows[0].name,
-      "Vendedor",
+      "Administrador",
     );
     assert.equal(
       (await report(f.c, "2026-10-30", "2026-10-30", "day")).totals.billing,
@@ -117,7 +117,7 @@ test("Eliminar un vendedor cierra sesiones, preserva ventas y permite reutilizar
       1,
     );
     await f.run("user", {
-      name: "Nuevo vendedor",
+      name: "Nuevo administrador",
       email: "nuevo@triunfoensidergroup",
       password: "Temporary-12345",
     });
@@ -143,7 +143,7 @@ test("Eliminar un vendedor cierra sesiones, preserva ventas y permite reutilizar
   }
 });
 
-test("Solo el administrador puede eliminar vendedores y no puede eliminar administradores", async () => {
+test("Solo el dueño puede eliminar administradores y no puede eliminar dueños", async () => {
   const f = await fixture();
   try {
     await assert.rejects(
@@ -152,7 +152,7 @@ test("Solo el administrador puede eliminar vendedores y no puede eliminar admini
     );
     await assert.rejects(
       f.run("userDelete", { id: randomUUID() }, { ...f.user, role: "SELLER" }),
-      /administrador/,
+      /dueño/,
     );
     const otherAdmin = randomUUID();
     await f.c.query(
@@ -161,7 +161,7 @@ test("Solo el administrador puede eliminar vendedores y no puede eliminar admini
     );
     await assert.rejects(
       f.run("userDelete", { id: otherAdmin }),
-      /cuenta de administrador/,
+      /cuenta de dueño/,
     );
     await assert.rejects(
       f.run("userDelete", { id: randomUUID() }),
@@ -172,11 +172,11 @@ test("Solo el administrador puede eliminar vendedores y no puede eliminar admini
   }
 });
 
-test("Eliminar un vendedor libera un cupo cuando ya existen diez cuentas", async () => {
+test("Eliminar un administrador libera un cupo cuando ya existen diez cuentas", async () => {
   const f = await fixture();
   try {
     await f.c.query(
-      "INSERT INTO users(id,name,email,password_hash,role) SELECT gen_random_uuid(),'Vendedor','v'||n||'@triunfoensidergroup','unused','SELLER' FROM generate_series(1,9) n",
+      "INSERT INTO users(id,name,email,password_hash,role) SELECT gen_random_uuid(),'Administrador','v'||n||'@triunfoensidergroup','unused','SELLER' FROM generate_series(1,9) n",
     );
     const sellerId = (
       await f.c.query("SELECT id FROM users WHERE role='SELLER' LIMIT 1")
@@ -216,7 +216,7 @@ test("La migración conserva los usuarios existentes y se puede repetir", async 
     );
     const id = randomUUID();
     await pg.query(
-      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Administrador','admin@triunfoensidergroup','preservar','ADMIN')",
+      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Dueño','admin@triunfoensidergroup','preservar','ADMIN')",
       [id],
     );
     await pg.exec(schema);
@@ -283,7 +283,7 @@ test("Fechas de Lima, semanas lunes-domingo y fin de mes bisiesto", () => {
   assert.equal(dateSchema.safeParse("2026-02-30").success, false);
   assert.equal(moneySchema.safeParse(1.001).success, false);
   assert.equal(
-    emailSchema.safeParse("vendedor@triunfoensidergroup").success,
+    emailSchema.safeParse("administrador@triunfoensidergroup").success,
     true,
   );
 });
@@ -376,7 +376,7 @@ test("Mismo identificador no duplica ventas ni descuenta dos veces", async () =>
     await f.pg.close();
   }
 });
-test("Pago excesivo o digital sin referencia no se registra", async () => {
+test("Pago excesivo o pago digital sin medio no se registra", async () => {
   const f = await fixture();
   try {
     await assert.rejects(
@@ -384,19 +384,19 @@ test("Pago excesivo o digital sin referencia no se registra", async () => {
       /superar/,
     );
     await assert.rejects(
-      f.run("sale", { ...sale(f.productId), digital: 5, method: "YAPE" }),
-      /código/,
+      f.run("sale", { ...sale(f.productId), digital: 5, method: "NONE" }),
+      /medio digital/,
     );
   } finally {
     await f.pg.close();
   }
 });
-test("Vendedor no puede editar productos, usuarios ni ingresar cuenta corriente", async () => {
+test("Administrador no puede editar productos, usuarios ni ingresar cuenta corriente", async () => {
   const f = await fixture();
   try {
     const u = { ...f.user, role: "SELLER" } as User;
-    await assert.rejects(f.run("product", {}, u), /administrador/);
-    await assert.rejects(f.run("user", {}, u), /administrador/);
+    await assert.rejects(f.run("product", {}, u), /dueño/);
+    await assert.rejects(f.run("user", {}, u), /dueño/);
     await assert.rejects(
       f.run(
         "bank",
@@ -409,7 +409,7 @@ test("Vendedor no puede editar productos, usuarios ni ingresar cuenta corriente"
         },
         u,
       ),
-      /administrador/,
+      /dueño/,
     );
   } finally {
     await f.pg.close();
@@ -530,7 +530,7 @@ test("Máximo 10 cuentas incluso con creaciones simultáneas", async () => {
   const f = await fixture();
   try {
     await f.c.query(
-      "INSERT INTO users(id,name,email,password_hash,role) SELECT gen_random_uuid(),'Vendedor','v'||n||'@triunfoensidergroup','unused','SELLER' FROM generate_series(1,8) n",
+      "INSERT INTO users(id,name,email,password_hash,role) SELECT gen_random_uuid(),'Administrador','v'||n||'@triunfoensidergroup','unused','SELLER' FROM generate_series(1,8) n",
     );
     const results = await Promise.allSettled(
       [1, 2].map((n) =>

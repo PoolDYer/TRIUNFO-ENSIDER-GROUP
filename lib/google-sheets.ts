@@ -212,7 +212,7 @@ export async function createSpreadsheet(
       );
     if ([401, 403].includes(response.status))
       throw new AppError(
-        "Google no permitió crear el reporte. Pide al administrador revisar la conexión y los permisos.",
+        "Google no permitió crear el reporte. Pide al dueño revisar la conexión y los permisos.",
         503,
       );
     throw new AppError(
@@ -241,7 +241,7 @@ export async function createConnectedSpreadsheet(
   );
   if (!rows[0] || rows[0].client_id !== config.clientId)
     throw new AppError(
-      "El administrador debe conectar una cuenta de Google para generar reportes.",
+      "El dueño debe conectar una cuenta de Google para generar reportes.",
       409,
     );
   const client = googleClient();
@@ -253,7 +253,7 @@ export async function createConnectedSpreadsheet(
     token = (await client.getAccessToken()).token;
   } catch {
     throw new AppError(
-      "La autorización de Google venció o fue revocada. Pide al administrador volver a conectar la cuenta.",
+      "La autorización de Google venció o fue revocada. Pide al dueño volver a conectar la cuenta.",
       503,
     );
   }
