@@ -6,6 +6,7 @@ import { dateSchema, periodRange, today } from "@/lib/validation";
 import { report } from "@/lib/reports";
 import { financingReport } from "@/lib/financing";
 import { expenseDashboard } from "@/lib/expense-dashboard";
+import { profitDashboard } from "@/lib/profit-dashboard";
 const options = { headers: { "Cache-Control": "private, no-store" } };
 export const runtime = "nodejs";
 export async function GET(req: Request) {
@@ -30,6 +31,13 @@ export async function GET(req: Request) {
     if (!["day", "week", "month"].includes(period))
       throw new AppError("Período inválido.");
     const { start, end } = periodRange(date, period);
+    if (view === "profits") {
+      const profits = await transaction(async c => {
+        await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
+        return profitDashboard(c,start,end);
+      });
+      return NextResponse.json({profits},options);
+    }
     if (view === "products") {
       if (u.role !== "ADMIN")
         throw new AppError(

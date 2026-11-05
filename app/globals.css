@@ -1936,6 +1936,16 @@ td small {
   .expense-day > strong { grid-column: 2; }
   .expense-day small { grid-column: 1 / -1; }
 }
+.profit-days { padding: 0 23px 20px; }
+.profit-day { display: grid; grid-template-columns: 100px minmax(0,1fr) auto; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 16px; }
+.profit-track { height: 18px; background: #f0f2f5; border-radius: 4px; overflow: hidden; }
+.profit-track > span { display: block; height: 100%; }
+.profit-track .gain { background: #23765b; }
+.profit-track .loss { background: #b43d32; }
+@media (max-width: 600px) {
+  .profit-day { grid-template-columns: 100px minmax(0,1fr); }
+  .profit-day > strong { grid-column: 1 / -1; }
+}
 .google-help {
   max-width: 860px;
   margin: 50px auto;

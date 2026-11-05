@@ -33,6 +33,7 @@ import Financing from "./financing";
 import ReceiptFields from "./receipt-fields";
 import FinancialGroups from "./financial-groups";
 import ExpenseDashboard from "./expense-dashboard";
+import ProfitDashboard from "./profit-dashboard";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -56,6 +57,7 @@ const nav = [
   { id: "sales", label: "Ventas del día", icon: ShoppingBag },
   { id: "receipts", label: "Control de entrada", icon: PackagePlus },
   { id: "expenses", label: "Gastos y caja", icon: Receipt },
+  { id: "profits", label: "Ganancias del día", icon: ChartNoAxesCombined },
   { id: "financing", label: "Financiamiento", icon: Wallet },
   { id: "bank", label: "Cuenta corriente", icon: Landmark },
   { id: "reports", label: "Reportes", icon: ChartNoAxesCombined },
@@ -436,6 +438,7 @@ export default function Dashboard({ user }: { user: User }) {
                         "Registra mercadería y mantén las existencias al día.",
                       expenses:
                         "Gastos operativos, gastos fijos y movimientos de caja.",
+                      profits: "Ventas, inversión, gastos y resultado neto del período.",
                       financing: "Todos los créditos, su interés único y el historial de pagos.",
                       bank: "Ingresos diarios, retiros y acumulado semanal.",
                       reports:
@@ -452,7 +455,7 @@ export default function Dashboard({ user }: { user: User }) {
               </p>
             </div>
             <div className="heading-actions">
-              {!isSpecial && view !== "financing" && (
+              {!isSpecial && view !== "financing" && view !== "profits" && (
                 <GoogleSheetsExport
                   date={date}
                   period={period}
@@ -564,6 +567,7 @@ export default function Dashboard({ user }: { user: User }) {
           )}
           {!loading && data && (
             <>
+              {view === "profits" && data.profits && <ProfitDashboard data={data.profits} />}
               {view === "financing" && data.financing && <Financing data={data.financing} date={day()} onSaved={() => {setNotice("Pago de financiamiento registrado.");setRefresh(n => n + 1);}} />}
               {t && ["overview", "reports"].includes(view) && (
                 <>
