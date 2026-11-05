@@ -8,6 +8,7 @@ import { financingReport } from "@/lib/financing";
 import { expenseDashboard } from "@/lib/expense-dashboard";
 import { profitDashboard } from "@/lib/profit-dashboard";
 import { canAccessSection } from "@/lib/roles";
+import { reportForRole } from "@/lib/report-access";
 const options = { headers: { "Cache-Control": "private, no-store" } };
 export const runtime = "nodejs";
 export async function GET(req: Request) {
@@ -138,7 +139,7 @@ export async function GET(req: Request) {
     ).rows;
     return NextResponse.json(
       {
-        summary,
+        summary: reportForRole(summary, u.role),
         ...(view === "expenses" ? { expenseDashboard: await expenseDashboard(db,start,end) } : {}),
         products,
         sales,

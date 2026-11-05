@@ -19,6 +19,8 @@ Sistema web administrativo de inventario, ventas y caja, preparado para Vercel c
 
 ## Nombres de roles
 
+Los datos de ganancias, inversión, costos de compra y márgenes son privados del Dueño. Las respuestas de reportes y la entrada a la exportación de Google Sheets usan una lista explícita de datos operativos para administradores, evitando transmitir campos de rentabilidad incluso si se añaden posteriormente al cálculo interno. Los saldos de caja se mantienen como datos operativos y no representan ganancias.
+
 El rol **Dueño** tiene todos los privilegios. El resto de cuentas tienen el rol **Administrador** y conservan los permisos operativos anteriores. Los identificadores almacenados `ADMIN` (Dueño) y `SELLER` (Administrador) se conservan para mantener compatibles las cuentas existentes, sin alterar correos, contraseñas o sesiones. La aplicación muestra los nombres «Dueño» y «Administrador».
 
 ## Base de datos recomendada

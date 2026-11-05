@@ -8,6 +8,7 @@ import {
 } from "./google-sheets";
 import { report } from "./reports";
 import { periodRange } from "./validation";
+import { reportForRole } from "./report-access";
 type Transaction = <T>(fn: (db: DB) => Promise<T>) => Promise<T>;
 export async function exportGoogleReport(
   db: DB,
@@ -58,7 +59,7 @@ export async function exportGoogleReport(
       );
       return report(c, start, end, period);
     });
-    const result = await create(spreadsheetPayload(summary));
+    const result = await create(spreadsheetPayload(reportForRole(summary,user.role)));
     await transaction(async (c) => {
       await c.query(
         "UPDATE google_exports SET status='READY',spreadsheet_id=$2,spreadsheet_url=$3 WHERE id=$1",
