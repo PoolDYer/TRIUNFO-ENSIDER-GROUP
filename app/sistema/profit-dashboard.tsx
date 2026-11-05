@@ -1,11 +1,12 @@
 import type { profitDashboard } from "@/lib/profit-dashboard";
 import ProfitDetails from "./profit-details";
+import ProfitBars from "./profit-bars";
 
 type Data = Awaited<ReturnType<typeof profitDashboard>>;
 const money = (cents: number | null) => cents === null ? "Pendiente" : new Intl.NumberFormat("es-PE", {style:"currency",currency:"PEN"}).format(cents/100);
 const dateLabel = (date: string) => new Date(date+"T12:00:00").toLocaleDateString("es-PE");
 
-export default function ProfitDashboard({data}:{data:Data}) {
+export default function ProfitDashboard({data,period}:{data:Data;period:string}) {
   const cards = [
     ["Total vendido",money(data.sold),`${data.salesCount} ventas del período`],
     ["Inversión de lo vendido",money(data.missingSaleCosts ? null : data.investment),"Cantidad vendida × costo histórico de compra"],
@@ -15,24 +16,13 @@ export default function ProfitDashboard({data}:{data:Data}) {
     ["Ganancia neta",money(data.gain),"Resultado positivo después de costos y gastos"],
     ["Pérdida",money(data.loss),"Resultado negativo después de costos y gastos"],
   ];
-  const maximum = Math.max(1,...data.daily.map(d=>Math.abs(d.result ?? 0)));
   return <>
     <p className="period-caption">{dateLabel(data.start)} al {dateLabel(data.end)} · Montos en soles</p>
     {data.missingCosts > 0 && <p role="alert" className="info-message">Hay {data.missingCosts} líneas de venta o pérdida sin costo de compra histórico. La ganancia y la pérdida quedan pendientes para no mostrar resultados incorrectos. Cambiar el precio actual del catálogo no modifica esos movimientos anteriores.</p>}
     {data.inconsistentSales>0 && <p role="alert" className="error-message">Hay {data.inconsistentSales} ventas cuyo total no coincide con sus productos registrados. El resultado queda pendiente para evitar una ganancia incorrecta.</p>}
     <div className="stats three">{cards.map(([label,value,note])=><article className="stat" key={label}><div className="stat-label">{label}</div><strong>{value}</strong><small>{note}</small></article>)}</div>
+    <ProfitBars daily={data.daily} period={period} />
     <ProfitDetails data={data} />
-    <section className="panel">
-      <div className="panel-heading"><h2>Resultado neto: {money(data.result)}</h2></div>
-      <p className="panel-hint">Total vendido − inversión de los productos vendidos − gastos operativos − gastos fijos − costo de los productos perdidos. Las pérdidas son unidades adicionales a las vendidas, no cobros pendientes. Los costos históricos se conservan; este resultado no representa el efectivo en caja.</p>
-      <div className="profit-days">{data.daily.map(d=><div className="profit-day" key={d.date}>
-        <span>{dateLabel(d.date)}</span>
-        <div className="profit-track" role="img" aria-label={`${dateLabel(d.date)}: ${d.result === null ? "resultado pendiente" : d.result < 0 ? "pérdida " + money(-d.result) : "ganancia " + money(d.result)}`}>
-          <span className={d.result !== null && d.result < 0 ? "loss" : "gain"} style={{width:`${Math.abs(d.result ?? 0)/maximum*100}%`}} />
-        </div>
-        <strong>{d.result === null ? "Pendiente" : `${d.result < 0 ? "Pérdida" : "Ganancia"}: ${money(Math.abs(d.result))}`}</strong>
-      </div>)}</div>
-    </section>
     <section className="panel"><div className="panel-heading"><h2>Detalle por fecha</h2></div>
       <div className="table-scroll"><table><thead><tr>{["Fecha","Vendido","Inversión de lo vendido","Gastos operativos","Gastos fijos","Pérdida de productos (costo)","Resultado neto"].map(h=><th key={h}>{h}</th>)}</tr></thead>
       <tbody>{data.daily.map(d=><tr key={d.date}><td>{dateLabel(d.date)}</td><td>{money(d.sold)}</td><td>{money(d.missingSaleCosts ? null : d.investment)}</td><td>{money(d.operating)}</td><td>{money(d.fixed)}</td><td>{money(d.missingLossCosts ? null : d.productLossCost)}</td><td><strong>{money(d.result)}</strong></td></tr>)}</tbody></table></div>

@@ -1985,6 +1985,21 @@ td small {
 @media print {
   .stock-notifications { display: none; }
 }
+.profit-bar-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 23px 20px; }
+.profit-bar-totals > div { display: flex; flex-direction: column; gap: 8px; font-size: 16px; }
+.profit-bar-totals strong { font-size: 23px; }
+.profit-gain-color { background: #23765b; }
+.profit-loss-color { background: #b43d32; }
+.profit-bar-scroll { overflow-x: auto; padding: 10px 23px 20px; }
+.profit-bar-grid { display: grid; gap: 16px; min-width: 100%; }
+.profit-bar-day { text-align: center; font-size: 15px; }
+.profit-bar-pair { height: 180px; display: flex; gap: 7px; justify-content: center; align-items: flex-end; border-bottom: 1px solid #aeb6c0; margin-bottom: 12px; }
+.profit-bar-column { height: 100%; width: 24px; display: flex; align-items: flex-end; }
+.profit-bar-column > span { width: 100%; border-radius: 4px 4px 0 0; }
+.profit-bar-day small { display: block; font-size: 13px; line-height: 1.6; margin-top: 4px; }
+@media (max-width: 550px) {
+  .profit-bar-totals { grid-template-columns: 1fr; }
+}
 .google-help {
   max-width: 860px;
   margin: 50px auto;

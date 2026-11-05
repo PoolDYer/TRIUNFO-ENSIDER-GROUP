@@ -573,7 +573,7 @@ export default function Dashboard({ user }: { user: User }) {
           )}
           {!loading && data && (
             <>
-              {view === "profits" && data.profits && <ProfitDashboard data={data.profits} />}
+              {view === "profits" && data.profits && <ProfitDashboard data={data.profits} period={period} />}
               {view === "financing" && data.financing && <Financing data={data.financing} date={day()} onSaved={() => {setNotice("Pago de financiamiento registrado.");setRefresh(n => n + 1);}} />}
               {t && ["overview", "reports"].includes(view) && (
                 <>
