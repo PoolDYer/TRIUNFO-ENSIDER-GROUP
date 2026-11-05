@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   description:
     "Sistema administrativo de inventario, ventas y control financiero de Triunfo Ensider Group.",
   robots: { index: false, follow: false },
+  icons: {
+    icon: { url: "/logo.png", type: "image/png" },
+  },
 };
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
