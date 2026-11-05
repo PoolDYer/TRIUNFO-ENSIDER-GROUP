@@ -1530,9 +1530,6 @@ function OperationModal({
   ]);
   const [digital, setDigital] = useState(""),
     [debt, setDebt] = useState("");
-  const [pendingCost, setPendingCost] = useState(
-    r ? r.purchase_price === null : true,
-  );
   const titles: Record<string, string> = {
     sale: "Registrar venta",
     receipt: "Registrar entrada",
@@ -1635,7 +1632,7 @@ function OperationModal({
         code: val("code"),
         name: val("name"),
         salePrice: num("salePrice"),
-        purchasePrice: pendingCost ? null : num("purchasePrice"),
+        purchasePrice: num("purchasePrice"),
         minStock: num("minStock"),
         ...(!r ? { stock: num("stock") } : {}),
       };
@@ -1983,21 +1980,22 @@ function OperationModal({
                   name="salePrice"
                   value={Number(r?.sale_price ?? 0) / 100}
                 />
-                <label className="checkbox-label">
+                <label>
+                  PRECIO UNITARIO DE COMPRA (S/)
                   <input
-                    type="checkbox"
-                    checked={pendingCost}
-                    onChange={(e) => setPendingCost(e.target.checked)}
-                  />{" "}
-                  Costo de compra pendiente de confirmar
-                </label>
-                {!pendingCost && (
-                  <MoneyField
-                    label="Precio unitario de compra (S/)"
                     name="purchasePrice"
-                    value={Number(r?.purchase_price ?? 0) / 100}
+                    type="number"
+                    min="0"
+                    max="10000000"
+                    step="0.01"
+                    defaultValue={Number(r?.purchase_price) ? Number(r.purchase_price) / 100 : ""}
+                    required
+                    onChange={(e) => {
+                      const clean = numericText(e.currentTarget.value);
+                      if (clean !== e.currentTarget.value) e.currentTarget.value = clean;
+                    }}
                   />
-                )}
+                </label>
                 <p className="muted">
                   El costo de compra se usa para inversión y ganancia potencial;
                   no cambia el historial de ventas.
