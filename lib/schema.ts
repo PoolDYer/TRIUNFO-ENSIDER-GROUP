@@ -113,4 +113,12 @@ CREATE TABLE IF NOT EXISTS sale_losses (
  PRIMARY KEY(sale_id,product_id)
 );
 CREATE INDEX IF NOT EXISTS sale_losses_product_idx ON sale_losses(product_id);
+CREATE TABLE IF NOT EXISTS stock_notifications (
+ id uuid PRIMARY KEY, product_id uuid REFERENCES products(id) ON DELETE SET NULL,
+ code text NOT NULL, name text NOT NULL, stock integer NOT NULL,
+ min_stock integer NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+ resolved_at timestamptz, read_at timestamptz
+);
+CREATE UNIQUE INDEX IF NOT EXISTS stock_notifications_active_idx ON stock_notifications(product_id) WHERE resolved_at IS NULL;
+CREATE INDEX IF NOT EXISTS stock_notifications_created_idx ON stock_notifications(created_at DESC);
 `;

@@ -36,6 +36,7 @@ import FinancialGroups from "./financial-groups";
 import ExpenseDashboard from "./expense-dashboard";
 import ProfitDashboard from "./profit-dashboard";
 import SaleLosses from "./sale-losses";
+import StockNotifications from "./stock-notifications";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -335,7 +336,7 @@ export default function Dashboard({ user }: { user: User }) {
   const filtered = products.filter((p) =>
     (p.name + " " + p.code).toLowerCase().includes(search.toLowerCase()),
   );
-  const low = products.filter((p) => p.stock <= p.min_stock);
+  const low = products.filter((p) => p.stock < p.min_stock);
   return (
     <div className="app-shell">
       <aside className={"sidebar " + (mobile ? "open" : "")}>
@@ -416,6 +417,8 @@ export default function Dashboard({ user }: { user: User }) {
             <ChevronRight size={14} />
             <strong>{title}</strong>
           </div>
+          <div className="topbar-actions">
+          {admin && !user.must_change_password && <StockNotifications refresh={refresh} />}
           <span className="topbar-date">
             {new Date().toLocaleDateString("es-PE", {
               timeZone: "America/Lima",
@@ -424,6 +427,7 @@ export default function Dashboard({ user }: { user: User }) {
               month: "long",
             })}
           </span>
+          </div>
         </header>
         <main className="content">
           <div className="page-heading">

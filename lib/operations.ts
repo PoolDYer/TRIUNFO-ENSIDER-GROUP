@@ -15,6 +15,7 @@ import { hashPassword } from "./password";
 import { financingInterest } from "./financing";
 import { registerReceiptOrder } from "./receipt-order";
 import { registerSale } from "./register-sale";
+import { syncStockNotifications } from "./stock-notifications";
 const detail = z.string().trim().min(1).max(500);
 const id = z.string().uuid();
 const base = { id, date: dateSchema };
@@ -263,5 +264,6 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
     "INSERT INTO audit_log(id,user_id,action,entity_id) VALUES($1,$2,$3,$4)",
     [randomUUID(), u.id, action, entity],
   );
+  await syncStockNotifications(c);
   return { ok: true, id: entity };
 }

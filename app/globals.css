@@ -1964,6 +1964,27 @@ td small {
   .profit-calculation > div { flex-wrap: wrap; gap: 6px; }
   .profit-calculation dd { margin-left: auto; }
 }
+.topbar-actions { display: flex; align-items: center; gap: 20px; }
+.stock-notifications { position: relative; }
+.notification-toggle { display: flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 9px 12px; font-size: 15px; font-weight: 600; }
+.notification-toggle b { background: #b43d32; color: white; min-width: 22px; padding: 2px 5px; border-radius: 12px; font-size: 13px; }
+.notification-history { position: absolute; top: calc(100% + 14px); right: 0; width: min(430px,calc(100vw - 32px)); max-height: min(620px,calc(100dvh - 120px)); overflow: auto; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: #fff; box-shadow: 0 12px 40px #15213022; z-index: 90; font-size: 15px; }
+.notification-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.notification-heading h2 { font-size: 20px; }
+.notification-history ol { list-style: none; padding: 0; margin: 14px 0; }
+.notification-history li { padding: 14px 10px; border-top: 1px solid var(--line); }
+.notification-history li.unread { background: #fff5eb; }
+.notification-history li p { margin: 7px 0; }
+.notification-history small { display: block; font-size: 13px; line-height: 1.6; color: #596472; }
+.stock-notification-toast { position: fixed; top: 88px; right: 24px; z-index: 95; display: flex; gap: 12px; align-items: flex-start; width: min(460px,calc(100vw - 32px)); border: 1px solid #e6b48d; border-radius: 12px; padding: 18px; background: #fff5eb; color: #713e1e; box-shadow: 0 8px 30px #15213022; font-size: 16px; }
+.stock-notification-toast p { margin: 7px 0; }
+@media (max-width: 760px) {
+  .notification-toggle > span { display: none; }
+  .stock-notification-toast { right: 16px; }
+}
+@media print {
+  .stock-notifications { display: none; }
+}
 .google-help {
   max-width: 860px;
   margin: 50px auto;
