@@ -17,6 +17,14 @@
 }
 body {
   margin: 0;
+  /* Navigation and labels are not editable, including with caret browsing enabled. */
+  caret-color: transparent;
+}
+input:not([readonly]):not([disabled]),
+textarea:not([readonly]):not([disabled]),
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  caret-color: auto;
 }
 button,
 input,
