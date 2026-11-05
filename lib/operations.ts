@@ -178,14 +178,6 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
         ],
       );
     entity = p.id;
-  } else if (action === "productDelete") {
-    admin(u);
-    const p = z.object({ id }).parse(input);
-    const history = await c.query("SELECT 1 FROM sale_items WHERE product_id=$1 UNION ALL SELECT 1 FROM receipts WHERE product_id=$1 UNION ALL SELECT 1 FROM sale_losses WHERE product_id=$1 UNION ALL SELECT 1 FROM receipt_items WHERE product_id=$1 LIMIT 1", [p.id]);
-    if (history.rows.length) throw new AppError("El producto tiene ventas o entradas registradas. Desactívalo para conservar su historial.",409);
-    const result = await c.query("DELETE FROM products WHERE id=$1 RETURNING id",[p.id]);
-    if (!result.rows.length) throw new AppError("El producto ya no existe.",404);
-    entity = p.id;
   } else if (action === "productStatus") {
     admin(u);
     const p = z.object({ id, active: z.boolean() }).parse(input);
@@ -194,6 +186,124 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       p.active,
     ]);
     entity = p.id;
+  } else if (action === "saleDelete") {
+    const p = z.object({ id }).parse(input);
+    const { rows: saleRows } = await c.query(
+      "SELECT id, user_id FROM sales WHERE id=$1 FOR UPDATE",
+      [p.id],
+    );
+    if (!saleRows.length) throw new AppError("La venta ya no existe.", 404);
+    if (u.role !== "ADMIN" && saleRows[0].user_id !== u.id)
+      throw new AppError(
+        "Solo el dueño o quien registró la venta puede eliminarla.",
+        403,
+      );
+    const { rows: itemRows } = await c.query(
+      "SELECT product_id,sum(quantity)::int AS quantity FROM (SELECT product_id,quantity FROM sale_items WHERE sale_id=$1 UNION ALL SELECT product_id,quantity FROM sale_losses WHERE sale_id=$1) movements GROUP BY product_id ORDER BY product_id",
+      [p.id],
+    );
+    for (const item of itemRows) {
+      await c.query(
+        "UPDATE products SET stock=stock+$1 WHERE id=$2",
+        [item.quantity, item.product_id],
+      );
+    }
+    await c.query("DELETE FROM sale_items WHERE sale_id=$1", [p.id]);
+    await c.query("DELETE FROM sales WHERE id=$1", [p.id]);
+    entity = p.id;
+  } else if (action === "receiptDelete") {
+    admin(u);
+    const p = z.object({ id }).parse(input);
+    const { rows: receiptRows } = await c.query(
+      "SELECT id, product_id, quantity FROM receipts WHERE id=$1 FOR UPDATE",
+      [p.id],
+    );
+    if (!receiptRows.length) throw new AppError("La entrada ya no existe.", 404);
+    const receipt = receiptRows[0];
+    const payments = await c.query("SELECT id FROM financing_payments WHERE receipt_id=$1 LIMIT 1",[p.id]);
+    if (payments.rows.length) throw new AppError("No se puede eliminar una entrada con pagos de financiamiento registrados.",409);
+    const lines = (await c.query("SELECT product_id,quantity FROM receipt_items WHERE receipt_id=$1 ORDER BY product_id",[p.id])).rows;
+    for (const line of lines.length ? lines : [receipt]) {
+      const { rows } = await c.query("UPDATE products SET stock=stock-$1 WHERE id=$2 AND stock >= $1 RETURNING id",[line.quantity,line.product_id]);
+      if (!rows.length) throw new AppError("No se puede eliminar la entrada: el stock actual es menor a la cantidad ingresada. Parte de la mercadería ya fue vendida.",409);
+    }
+    await c.query("DELETE FROM receipts WHERE id=$1", [p.id]);
+    entity = p.id;
+  } else if (action === "expenseDelete") {
+    admin(u);
+    const p = z.object({ id }).parse(input);
+    const { rows } = await c.query(
+      "DELETE FROM expenses WHERE id=$1 RETURNING id",
+      [p.id],
+    );
+    if (!rows.length) throw new AppError("El gasto ya no existe.", 404);
+    entity = p.id;
+  } else if (action === "treasuryDelete") {
+    admin(u);
+    const p = z.object({ id }).parse(input);
+    const { rows } = await c.query(
+      "DELETE FROM treasury WHERE id=$1 RETURNING id",
+      [p.id],
+    );
+    if (!rows.length)
+      throw new AppError("El movimiento de caja ya no existe.", 404);
+    entity = p.id;
+  } else if (action === "bankDelete") {
+    admin(u);
+    const p = z.object({ id }).parse(input);
+    const { rows } = await c.query(
+      "DELETE FROM bank_movements WHERE id=$1 RETURNING id",
+      [p.id],
+    );
+    if (!rows.length)
+      throw new AppError("El movimiento bancario ya no existe.", 404);
+    entity = p.id;
+  } else if (action === "openingDelete") {
+    admin(u);
+    const p = z.object({ date: dateSchema }).parse(input);
+    const { rows } = await c.query(
+      "DELETE FROM cash_openings WHERE date=$1 RETURNING date",
+      [p.date],
+    );
+    if (!rows.length)
+      throw new AppError("No existe apertura registrada para esta fecha.", 404);
+    entity = p.date;
+  } else if (action === "productDelete") {
+    admin(u);
+    const p = z.object({ id }).parse(input);
+    const history = await c.query("SELECT 1 FROM sale_items WHERE product_id=$1 UNION ALL SELECT 1 FROM receipts WHERE product_id=$1 LIMIT 1", [p.id]);
+    if (history.rows.length) throw new AppError("El producto tiene ventas o entradas registradas. Desactívalo para conservar su historial.",409);
+    const losses = await c.query("SELECT 1 FROM sale_losses WHERE product_id=$1 LIMIT 1",[p.id]);
+    if (losses.rows.length) throw new AppError("El producto tiene pérdidas registradas. Desactívalo para conservar su historial.",409);
+    const order = await c.query("SELECT 1 FROM receipt_items WHERE product_id=$1 LIMIT 1",[p.id]);
+    if (order.rows.length) throw new AppError("El producto pertenece a un pedido registrado. Desactívalo para conservar su historial.",409);
+    const credits = await c.query("SELECT id FROM receipts WHERE product_id=$1 AND modality='CREDIT' LIMIT 1",[p.id]);
+    if (credits.rows.length) throw new AppError("El producto tiene financiamientos. Desactívalo para conservar su historial.",409);
+    await c.query("DELETE FROM sale_items WHERE product_id=$1", [p.id]);
+    await c.query("DELETE FROM receipts WHERE product_id=$1", [p.id]);
+    const { rows } = await c.query(
+      "DELETE FROM products WHERE id=$1 RETURNING id",
+      [p.id],
+    );
+    if (!rows.length) throw new AppError("El producto ya no existe.", 404);
+    entity = p.id;
+  } else if (action === "resetAllData") {
+    admin(u);
+    z.object({ confirm: z.literal(true) }).parse(input);
+    await c.query("DELETE FROM financing_payments");
+    await c.query("DELETE FROM sale_items");
+    await c.query("DELETE FROM sales");
+    await c.query("DELETE FROM receipts");
+    await c.query("DELETE FROM expenses");
+    await c.query("DELETE FROM treasury");
+    await c.query("DELETE FROM bank_movements");
+    await c.query("DELETE FROM cash_openings");
+    await c.query("DELETE FROM google_exports");
+    await c.query("DELETE FROM products");
+    await c.query("DELETE FROM initial_reference");
+    await c.query("DELETE FROM audit_log");
+    await c.query("DELETE FROM sessions WHERE user_id != $1", [u.id]);
+    entity = "all";
   } else if (action === "user") {
     admin(u);
     const p = z

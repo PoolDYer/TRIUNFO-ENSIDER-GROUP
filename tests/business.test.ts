@@ -550,3 +550,169 @@ test("Máximo 10 cuentas incluso con creaciones simultáneas", async () => {
     await f.pg.close();
   }
 });
+test("Eliminar venta devuelve el stock al producto y elimina el registro", async () => {
+  const f = await fixture();
+  try {
+    const saleId = randomUUID();
+    await f.run("sale", {
+      id: saleId,
+      date: "2026-10-30",
+      detail: "Venta a eliminar",
+      items: [{ productId: f.productId, quantity: 4, unitPrice: 10 }],
+      digital: 0,
+      debt: 0,
+      method: "NONE",
+      reference: "",
+    });
+    let prod = await f.c.query("SELECT stock FROM products WHERE id=$1", [f.productId]);
+    assert.equal(prod.rows[0].stock, 6);
+
+    await f.run("saleDelete", { id: saleId });
+    prod = await f.c.query("SELECT stock FROM products WHERE id=$1", [f.productId]);
+    assert.equal(prod.rows[0].stock, 10);
+
+    const salesCount = await f.c.query("SELECT count(*)::int AS n FROM sales WHERE id=$1", [saleId]);
+    assert.equal(salesCount.rows[0].n, 0);
+  } finally {
+    await f.pg.close();
+  }
+});
+test("Eliminar entrada descuenta stock y rechaza si ya se vendió parte de la mercadería", async () => {
+  const f = await fixture();
+  try {
+    const receiptId = randomUUID();
+    await f.run("receipt", {
+      id: receiptId,
+      date: "2026-10-30",
+      productId: f.productId,
+      quantity: 5,
+      supplier: "Proveedor",
+      orderCost: 100,
+      paid: 100,
+      modality: "CASH",
+    });
+    let prod = await f.c.query("SELECT stock FROM products WHERE id=$1", [f.productId]);
+    assert.equal(prod.rows[0].stock, 15);
+
+    // Vender 12 unidades para dejar stock en 3 (menor a las 5 ingresadas)
+    await f.run("sale", sale(f.productId, 12));
+    prod = await f.c.query("SELECT stock FROM products WHERE id=$1", [f.productId]);
+    assert.equal(prod.rows[0].stock, 3);
+
+    // Debe rechazar porque el stock actual es 3 < 5
+    await assert.rejects(
+      f.run("receiptDelete", { id: receiptId }),
+      /menor a la cantidad ingresada/,
+    );
+
+    // Devolvemos la venta anulándola
+    const saleId = (await f.c.query("SELECT id FROM sales LIMIT 1")).rows[0].id;
+    await f.run("saleDelete", { id: saleId });
+
+    // Ahora el stock vuelve a 15, y receiptDelete debe funcionar
+    await f.run("receiptDelete", { id: receiptId });
+    prod = await f.c.query("SELECT stock FROM products WHERE id=$1", [f.productId]);
+    assert.equal(prod.rows[0].stock, 10);
+  } finally {
+    await f.pg.close();
+  }
+});
+test("Eliminar gastos, movimientos de tesorería, cuenta corriente y apertura", async () => {
+  const f = await fixture();
+  try {
+    const expId = randomUUID();
+    await f.run("expense", {
+      id: expId,
+      date: "2026-10-30",
+      kind: "OPERATING",
+      detail: "Gasto de prueba",
+      amount: 50,
+    });
+    await f.run("expenseDelete", { id: expId });
+    assert.equal(
+      (await f.c.query("SELECT count(*)::int AS n FROM expenses")).rows[0].n,
+      0,
+    );
+
+    const treasId = randomUUID();
+    await f.run("treasury", {
+      id: treasId,
+      date: "2026-10-30",
+      kind: "DEPOSIT",
+      detail: "Depósito de prueba",
+      amount: 100,
+    });
+    await f.run("treasuryDelete", { id: treasId });
+    assert.equal(
+      (await f.c.query("SELECT count(*)::int AS n FROM treasury")).rows[0].n,
+      0,
+    );
+
+    const bankId = randomUUID();
+    await f.run("bank", {
+      id: bankId,
+      date: "2026-10-30",
+      kind: "INCOME",
+      detail: "Ingreso bancario",
+      amount: 500,
+    });
+    await f.run("bankDelete", { id: bankId });
+    assert.equal(
+      (await f.c.query("SELECT count(*)::int AS n FROM bank_movements")).rows[0].n,
+      0,
+    );
+
+    await f.run("opening", { date: "2026-10-30", amount: 120 });
+    await f.run("openingDelete", { date: "2026-10-30" });
+    assert.equal(
+      (await f.c.query("SELECT count(*)::int AS n FROM cash_openings")).rows[0].n,
+      0,
+    );
+  } finally {
+    await f.pg.close();
+  }
+});
+test("Eliminar producto y reinicio total de datos del sistema", async () => {
+  const f = await fixture();
+  try {
+    const newProdId = randomUUID();
+    await f.run("product", {
+      id: newProdId,
+      code: "P999",
+      name: "Producto a borrar",
+      salePrice: 25,
+      purchasePrice: 15,
+      minStock: 5,
+      stock: 20,
+    });
+    await f.run("productDelete", { id: newProdId });
+    assert.equal(
+      (await f.c.query("SELECT count(*)::int AS n FROM products WHERE id=$1", [newProdId])).rows[0].n,
+      0,
+    );
+
+    // Crear varias operaciones y luego llamar a resetAllData
+    await f.run("sale", sale(f.productId, 2));
+    await f.run("expense", {
+      id: randomUUID(),
+      date: "2026-10-30",
+      kind: "FIXED",
+      detail: "Alquiler",
+      amount: 200,
+    });
+    await f.run("resetAllData", { confirm: true });
+
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM sales")).rows[0].n, 0);
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM sale_items")).rows[0].n, 0);
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM receipts")).rows[0].n, 0);
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM expenses")).rows[0].n, 0);
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM treasury")).rows[0].n, 0);
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM bank_movements")).rows[0].n, 0);
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM cash_openings")).rows[0].n, 0);
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM products")).rows[0].n, 0);
+    // Usuarios conservados
+    assert.equal((await f.c.query("SELECT count(*)::int AS n FROM users")).rows[0].n, 1);
+  } finally {
+    await f.pg.close();
+  }
+});

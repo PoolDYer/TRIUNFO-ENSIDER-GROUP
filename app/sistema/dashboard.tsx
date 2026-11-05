@@ -85,20 +85,28 @@ const kindLabel: Record<string, string> = {
 };
 const actionLabel: Record<string, string> = {
   sale: "Venta registrada",
+  saleDelete: "Venta eliminada",
   receipt: "Entrada registrada",
   receiptOrder: "Pedido de entrada registrado",
   financingPayment: "Pago de financiamiento registrado",
+  receiptDelete: "Entrada eliminada",
   expense: "Gasto registrado",
+  expenseDelete: "Gasto eliminado",
   treasury: "Movimiento de caja",
+  treasuryDelete: "Movimiento de caja eliminado",
   bank: "Cuenta corriente",
+  bankDelete: "Movimiento bancario eliminado",
   opening: "Apertura de caja",
+  openingDelete: "Apertura de caja eliminada",
   product: "Producto guardado",
   productStatus: "Estado de producto",
+  productDelete: "Producto eliminado",
   user: "Usuario creado",
   userStatus: "Estado de usuario",
   userDelete: "Usuario eliminado",
   resetPassword: "Contraseña restablecida",
   password: "Cambio de contraseña",
+  resetAllData: "Reinicio total de datos",
   googleConnect: "Conexión con Google Sheets",
   googleExport: "Reporte generado en Google Sheets",
 };
@@ -590,19 +598,23 @@ export default function Dashboard({ user }: { user: User }) {
                   </div>
                   <section className="stats">
                     <Stat
-                      label="Facturación"
+                      label="Subtotal facturación"
                       value={money(t.billing)}
                       icon={ShoppingBag}
                       note={`${t.salesCount} operaciones registradas`}
                     />
                     <Stat
-                      label="Yape / transferencias"
+                      label={
+                        period === "week"
+                          ? "Total de Yape semanal"
+                          : "Total de Yape"
+                      }
                       value={money(t.digital)}
                       icon={ArrowUpRight}
                       note="Cobros fuera de caja física"
                     />
                     <Stat
-                      label="Gastos del período"
+                      label="Total de gastos"
                       value={money(t.operating + t.fixed)}
                       icon={ArrowDownLeft}
                       note={`Operativos ${money(t.operating)} · Fijos ${money(t.fixed)}`}
@@ -611,7 +623,7 @@ export default function Dashboard({ user }: { user: User }) {
                       label="Caja neta"
                       value={money(t.netCash)}
                       icon={Wallet}
-                      note="Después de gastos fijos y deudas"
+                      note="Total de caja menos gastos fijos y deudas"
                       accent
                     />
                   </section>
@@ -679,27 +691,35 @@ export default function Dashboard({ user }: { user: User }) {
                       </div>
                       <div className="cash-lines">
                         <div>
-                          <span>Facturación</span>
+                          <span>Subtotal facturación</span>
                           <strong>{money(t.billing)}</strong>
                         </div>
                         <div>
-                          <span>Yape / transferencias</span>
+                          <span>
+                            {period === "week"
+                              ? "Total de Yape semanal"
+                              : "Total de Yape"}
+                          </span>
                           <span>− {money(t.digital)}</span>
                         </div>
                         <div>
-                          <span>Gastos operativos</span>
+                          <span>
+                            {period === "week"
+                              ? "Total de gastos operativos diarios"
+                              : "Total de gastos operativos"}
+                          </span>
                           <span>− {money(t.operating)}</span>
                         </div>
                         <div>
-                          <span>Deudas</span>
+                          <span>Total de deudas</span>
                           <span>− {money(t.debt)}</span>
                         </div>
                         <div className="subtotal">
-                          <span>Caja según ejemplo</span>
+                          <span>Total de caja</span>
                           <strong>{money(t.excelCash)}</strong>
                         </div>
                         <div>
-                          <span>Gastos fijos</span>
+                          <span>Total de gastos fijos</span>
                           <span>− {money(t.fixed)}</span>
                         </div>
                         <div className="total">
@@ -727,7 +747,11 @@ export default function Dashboard({ user }: { user: User }) {
                         Ver todas <ArrowUpRight size={15} />
                       </button>
                     </div>
-                    <SalesTable sales={data.sales.slice(0, 5)} />
+                    <SalesTable
+                      sales={data.sales.slice(0, 5)}
+                      onDelete={(s) => setModal({ type: "saleDelete", record: s })}
+                      canDelete={(s) => admin || s.user_id === user.id}
+                    />
                   </section>
                   <div className="small-grid">
                     <button
@@ -759,7 +783,11 @@ export default function Dashboard({ user }: { user: User }) {
                       {data.sales.length} registros visibles
                     </span>
                   </div>
-                  <SalesTable sales={data.sales} />
+                  <SalesTable
+                    sales={data.sales}
+                    onDelete={(s) => setModal({ type: "saleDelete", record: s })}
+                    canDelete={(s) => admin || s.user_id === user.id}
+                  />
                   <p className="panel-hint">
                     Se muestran hasta 200 ventas recientes del período. Los
                     totales y reportes incluyen todas las operaciones.
@@ -769,20 +797,21 @@ export default function Dashboard({ user }: { user: User }) {
               {view === "receipts" && (
                 <section className="panel">
                   <div className="panel-heading">
-                    <h2>Mercadería ingresada</h2>
+                    <h2>CONTROL DE ENTRADA</h2>
                     <span className="pill">Stock actualizado al guardar</span>
                   </div>
                   {data.receipts.length ? (
                     <Table
                       headers={[
                         "Fecha",
-                        "Producto",
+                        "Productos",
                         "Proveedor",
-                        "Cantidad",
+                        "Cantidad de ingresante",
                         "Costo de pedido",
                         "Modalidad",
                         "Total a crédito",
                         "Registrado por",
+                        ...(admin ? ["Acciones"] : []),
                       ]}
                     >
                       {data.receipts.map((r: any) => (
@@ -801,6 +830,18 @@ export default function Dashboard({ user }: { user: User }) {
                             {r.modality === "CREDIT" ? money(Number(r.credit_principal) + Math.round(Number(r.credit_principal) * Number(r.interest_bps) / 10000)) : "—"}
                           </td>
                           <td>{r.user_name}</td>
+                          {admin && (
+                            <td>
+                              <button
+                                className="text-button danger-text"
+                                onClick={() =>
+                                  setModal({ type: "receiptDelete", record: r })
+                                }
+                              >
+                                Eliminar
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </Table>
@@ -853,6 +894,7 @@ export default function Dashboard({ user }: { user: User }) {
                           "Tipo",
                           "Monto",
                           "Registrado por",
+                          ...(admin ? ["Acciones"] : []),
                         ]}
                       >
                         {data.expenses.map((r: any) => (
@@ -864,6 +906,21 @@ export default function Dashboard({ user }: { user: User }) {
                             </td>
                             <td>{money(r.amount)}</td>
                             <td>{r.user_name}</td>
+                            {admin && (
+                              <td>
+                                <button
+                                  className="text-button danger-text"
+                                  onClick={() =>
+                                    setModal({
+                                      type: "expenseDelete",
+                                      record: r,
+                                    })
+                                  }
+                                >
+                                  Eliminar
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </Table>
@@ -876,6 +933,20 @@ export default function Dashboard({ user }: { user: User }) {
                       <h2>Movimientos de caja</h2>
                       <span className="muted">
                         Aperturas del período: {money(t.opening)}
+                        {admin && Number(t.opening) > 0 && (
+                          <button
+                            className="text-button danger-text"
+                            style={{ marginLeft: "0.5rem" }}
+                            onClick={() =>
+                              setModal({
+                                type: "openingDelete",
+                                record: { date, amount: t.opening },
+                              })
+                            }
+                          >
+                            Anular apertura
+                          </button>
+                        )}
                       </span>
                     </div>
                     {data.treasury.length ? (
@@ -886,6 +957,7 @@ export default function Dashboard({ user }: { user: User }) {
                           "Tipo",
                           "Monto",
                           "Registrado por",
+                          ...(admin ? ["Acciones"] : []),
                         ]}
                       >
                         {data.treasury.map((r: any) => (
@@ -895,6 +967,21 @@ export default function Dashboard({ user }: { user: User }) {
                             <td>{kindLabel[r.kind]}</td>
                             <td>{money(r.amount)}</td>
                             <td>{r.user_name}</td>
+                            {admin && (
+                              <td>
+                                <button
+                                  className="text-button danger-text"
+                                  onClick={() =>
+                                    setModal({
+                                      type: "treasuryDelete",
+                                      record: r,
+                                    })
+                                  }
+                                >
+                                  Eliminar
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </Table>
@@ -920,19 +1007,19 @@ export default function Dashboard({ user }: { user: User }) {
                 <>
                   <section className="stats three">
                     <Stat
-                      label="Ingresos del período"
+                      label="Monto cuenta corriente"
                       value={money(t.bankIncome)}
                       icon={ArrowDownLeft}
                       note="Ingresados por el dueño"
                     />
                     <Stat
-                      label="Retiros / disposición"
+                      label="Monto de retiro / disposición"
                       value={money(t.bankWithdrawals)}
                       icon={ArrowUpRight}
                       note="Registrados con su motivo"
                     />
                     <Stat
-                      label="Total acumulado"
+                      label="TOTAL ACUMULADO"
                       value={money(t.bankAccumulated)}
                       icon={Landmark}
                       note="Hasta la fecha final del período"
@@ -983,6 +1070,7 @@ export default function Dashboard({ user }: { user: User }) {
                           "Movimiento",
                           "Monto",
                           "Registrado por",
+                          ...(admin ? ["Acciones"] : []),
                         ]}
                       >
                         {data.bank.map((r: any) => (
@@ -1001,6 +1089,18 @@ export default function Dashboard({ user }: { user: User }) {
                             </td>
                             <td>{money(r.amount)}</td>
                             <td>{r.user_name}</td>
+                            {admin && (
+                              <td>
+                                <button
+                                  className="text-button danger-text"
+                                  onClick={() =>
+                                    setModal({ type: "bankDelete", record: r })
+                                  }
+                                >
+                                  Eliminar
+                                </button>
+                              </td>
+                            )}
                           </tr>
                         ))}
                       </Table>
@@ -1019,10 +1119,10 @@ export default function Dashboard({ user }: { user: User }) {
                       <Table
                         headers={[
                           "Semana desde",
-                          "Ingresos",
-                          "Retiros",
-                          "Total semanal",
-                          "Acumulado",
+                          "Subtotal cuenta corriente",
+                          "Subtotal (retiro/disposición)",
+                          "TOTAL SEMANAL",
+                          "TOTAL ACUMULADO",
                         ]}
                       >
                         {data.bankWeeks.map((r: any) => (
@@ -1074,11 +1174,15 @@ export default function Dashboard({ user }: { user: User }) {
                       <Table
                         headers={[
                           "Código",
-                          "Producto",
-                          "Stock actual",
-                          "Cantidad vendida",
+                          "Detalle de productos",
+                          "Stock",
+                          period === "week"
+                            ? "Total de productos vendidos semanalmente"
+                            : "Productos vendidos",
                           "Precio unitario",
-                          "Facturación",
+                          period === "week"
+                            ? "Facturación semanal"
+                            : "Facturación",
                         ]}
                       >
                         {data.summary.items.map((r: any) => (
@@ -1100,16 +1204,20 @@ export default function Dashboard({ user }: { user: User }) {
                   </section>
                   <section className="panel">
                     <div className="panel-heading">
-                      <h2>Control financiero</h2>
+                      <h2>
+                        {period === "week"
+                          ? "CONTROL FINANCIERO SEMANAL"
+                          : "Control financiero"}
+                      </h2>
                     </div>
                     <FinancialGroups totals={t} period={period} />
                     <p className="panel-hint">
-                      Caja según ejemplo: facturación − pagos digitales − gastos
-                      operativos{period === "day" ? " − deudas" : ""}. Caja
-                      neta: facturación − pagos digitales − gastos operativos −
-                      deudas − gastos fijos. En períodos de varios días, las
-                      aperturas son una suma de registros diarios, no un saldo
-                      bancario ni un arrastre automático.
+                      Total de caja: subtotal facturación − total de Yape −
+                      total de gastos operativos{period === "day" ? " − deudas" : ""}. Caja
+                      neta: subtotal facturación − total de Yape − total de
+                      gastos operativos − deudas − total de gastos fijos. En períodos de
+                      varios días, las aperturas son una suma de registros
+                      diarios, no un saldo bancario ni un arrastre automático.
                     </p>
                   </section>
                 </>
@@ -1117,12 +1225,11 @@ export default function Dashboard({ user }: { user: User }) {
               {view === "products" && (
                 <>
                   <div className="restricted-note">
-                    <ShieldCheck size={17} /> Información exclusiva del
-                    dueño
+                    <ShieldCheck size={17} /> ACCESO PERSONAL (RESTRINGIDO)
                   </div>
                   <div className="product-totals">
                     <div>
-                      <span>Capital a precio de venta</span>
+                      <span>CAPITAL</span>
                       <strong>
                         {money(
                           products.reduce(
@@ -1133,7 +1240,7 @@ export default function Dashboard({ user }: { user: User }) {
                       </strong>
                     </div>
                     <div>
-                      <span>Inversión con costo conocido</span>
+                      <span>INVERSION</span>
                       <strong>
                         {money(
                           products.reduce(
@@ -1145,7 +1252,7 @@ export default function Dashboard({ user }: { user: User }) {
                       </strong>
                     </div>
                     <div>
-                      <span>Ganancia potencial con costo conocido</span>
+                      <span>GANANCIA</span>
                       <strong>
                         {money(
                           products
@@ -1164,13 +1271,13 @@ export default function Dashboard({ user }: { user: User }) {
                   </div>
                   {products.some((p) => p.purchase_price === null) && (
                     <p className="info-message">
-                      Hay costos de compra pendientes. La inversión y la
+                      Hay costos de compra pendientes (por confirmar). La inversión y la
                       ganancia son parciales hasta completarlos.
                     </p>
                   )}
                   <section className="panel">
                     <div className="panel-heading">
-                      <h2>Catálogo de productos</h2>
+                      <h2>Lista de productos</h2>
                       <div className="search">
                         <Search size={16} />
                         <input
@@ -1183,13 +1290,13 @@ export default function Dashboard({ user }: { user: User }) {
                     </div>
                     <Table
                       headers={[
-                        "Código",
-                        "Producto",
-                        "Stock",
-                        "Precio venta",
-                        "Precio compra",
-                        "Capital",
-                        "Inversión",
+                        "CODIGO",
+                        "PRODUCTOS",
+                        "CANTIDAD EXISTENTE O STOCK",
+                        "PRECIO UNITARIO DE VENTA",
+                        "PRECIO UNITARIO DE COMPRA",
+                        "CAPITAL",
+                        "INVERSION",
                         "Estado",
                         "Acciones",
                       ]}
@@ -1244,6 +1351,14 @@ export default function Dashboard({ user }: { user: User }) {
                               }
                             >
                               {p.active ? "Desactivar" : "Activar"}
+                            </button>
+                            <button
+                              className="text-button danger-text"
+                              onClick={() =>
+                                setModal({ type: "productDelete", record: p })
+                              }
+                            >
+                              Eliminar
                             </button>
                           </td>
                         </tr>
@@ -1339,6 +1454,23 @@ export default function Dashboard({ user }: { user: User }) {
                 <>
                   <section className="panel">
                     <div className="panel-heading">
+                      <div>
+                        <h2>Administración y limpieza de datos</h2>
+                        <p>
+                          Elimina todos los datos operativos y restablece el
+                          sistema a cero conservando las cuentas de usuario.
+                        </p>
+                      </div>
+                      <button
+                        className="button danger"
+                        onClick={() => setModal({ type: "resetAllData" })}
+                      >
+                        Eliminar todos los datos del sistema
+                      </button>
+                    </div>
+                  </section>
+                  <section className="panel">
+                    <div className="panel-heading">
                       <h2>Historial de operaciones</h2>
                       <span className="muted">Últimas 200 operaciones</span>
                     </div>
@@ -1432,10 +1564,25 @@ export default function Dashboard({ user }: { user: User }) {
             }
             setModal(null);
             setRefresh((n) => n + 1);
+            const isDel = [
+              "userDelete",
+              "saleDelete",
+              "receiptDelete",
+              "expenseDelete",
+              "treasuryDelete",
+              "bankDelete",
+              "openingDelete",
+              "productDelete",
+              "resetAllData",
+            ].includes(type);
             setNotice(
               type === "userDelete"
                 ? "Usuario eliminado correctamente."
-                : "Registro guardado correctamente.",
+                : type === "resetAllData"
+                  ? "Todos los datos del sistema han sido eliminados correctamente."
+                  : isDel
+                    ? "Registro eliminado correctamente."
+                    : "Registro guardado correctamente.",
             );
           }}
         />
@@ -1443,18 +1590,28 @@ export default function Dashboard({ user }: { user: User }) {
     </div>
   );
 }
-function SalesTable({ sales }: { sales: any[] }) {
+function SalesTable({
+  sales,
+  onDelete,
+  canDelete,
+}: {
+  sales: any[];
+  onDelete?: (s: any) => void;
+  canDelete?: (s: any) => boolean;
+}) {
+  const showActions = !!onDelete;
   return sales.length ? (
     <Table
       headers={[
         "Fecha",
         "Productos vendidos",
-        "Facturación",
-        "Yape / transf.",
+        "Subtotal facturación",
+        "Total de Yape",
         "Deuda / pérdida de productos",
         "Efectivo",
         "Código de operación",
         "Registrado por",
+        ...(showActions ? ["Acciones"] : []),
       ]}
     >
       {sales.map((s) => (
@@ -1489,6 +1646,18 @@ function SalesTable({ sales }: { sales: any[] }) {
           <td>{money(s.cash)}</td>
           <td>{s.reference || "—"}</td>
           <td>{s.user_name}</td>
+          {showActions && (
+            <td>
+              {canDelete?.(s) !== false && (
+                <button
+                  className="text-button danger-text"
+                  onClick={() => onDelete(s)}
+                >
+                  Eliminar
+                </button>
+              )}
+            </td>
+          )}
         </tr>
       ))}
     </Table>
@@ -1522,20 +1691,39 @@ function OperationModal({
   const [digital, setDigital] = useState("");
   const titles: Record<string, string> = {
     sale: "Registrar venta",
+    saleDelete: "Eliminar venta",
     receipt: "Registrar entrada",
+    receiptDelete: "Eliminar entrada de inventario",
     expense: "Registrar gasto",
+    expenseDelete: "Eliminar gasto",
     treasury: "Registrar movimiento de caja",
+    treasuryDelete: "Eliminar movimiento de caja",
     opening: "Apertura de caja",
+    openingDelete: "Eliminar apertura de caja",
     bank:
       r?.kind === "INCOME"
         ? "Ingreso de cuenta corriente"
         : "Retiro de cuenta corriente",
+    bankDelete: "Eliminar movimiento de cuenta corriente",
     product: r ? "Editar producto" : "Nuevo producto",
+    productDelete: "Eliminar producto",
     user: "Crear administrador",
     resetPassword: "Restablecer contraseña",
     userDelete: "Eliminar usuario",
+    resetAllData: "Eliminar todos los datos del sistema",
     password: forced ? "Configura tu contraseña" : "Cambiar contraseña",
   };
+  const isDelete = [
+    "userDelete",
+    "saleDelete",
+    "receiptDelete",
+    "expenseDelete",
+    "treasuryDelete",
+    "bankDelete",
+    "openingDelete",
+    "productDelete",
+    "resetAllData",
+  ].includes(type);
   useEffect(() => {
     const old = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -1636,6 +1824,14 @@ function OperationModal({
     if (type === "resetPassword")
       body = { id: r.id, password: val("password") };
     if (type === "userDelete") body = { id: r.id };
+    if (type === "saleDelete") body = { id: r.id };
+    if (type === "receiptDelete") body = { id: r.id };
+    if (type === "expenseDelete") body = { id: r.id };
+    if (type === "treasuryDelete") body = { id: r.id };
+    if (type === "bankDelete") body = { id: r.id };
+    if (type === "openingDelete") body = { date: r.date };
+    if (type === "productDelete") body = { id: r.id };
+    if (type === "resetAllData") body = { confirm: true };
     try {
       const auth = type === "password";
       const resp = await fetch(auth ? "/api/auth" : "/api/operations", {
@@ -1678,8 +1874,12 @@ function OperationModal({
           <div>
             <h2 id="modal-title">{titles[type]}</h2>
             <p>
-              {type === "userDelete"
-                ? "Confirma la cuenta que deseas eliminar."
+              {isDelete
+                ? type === "userDelete"
+                  ? "Confirma la cuenta que deseas eliminar."
+                  : type === "resetAllData"
+                    ? "Esta acción restablecerá el sistema a cero."
+                    : "Confirma la eliminación de este registro."
                 : type === "password"
                   ? "Usa al menos 12 caracteres. Al guardar, iniciarás sesión nuevamente."
                   : "Revisa los datos antes de guardar el registro."}
@@ -1698,20 +1898,20 @@ function OperationModal({
         </header>
         <form onSubmit={submit}>
           <div className="modal-body">
-            {![
-              "product",
-              "user",
-              "resetPassword",
-              "password",
-              "userDelete",
-            ].includes(type) && (
-              <Field
-                label="Fecha de operación"
-                name="date"
-                type="date"
-                value={date}
-              />
-            )}
+            {!isDelete &&
+              ![
+                "product",
+                "user",
+                "resetPassword",
+                "password",
+              ].includes(type) && (
+                <Field
+                  label="Fecha de operación"
+                  name="date"
+                  type="date"
+                  value={date}
+                />
+              )}
             {type === "sale" && (
               <>
                 <div className="sale-items">
@@ -1823,12 +2023,12 @@ function OperationModal({
                   <Plus size={16} /> Agregar producto
                 </button>
                 <div className="form-total">
-                  <span>Facturación total</span>
+                  <span>Subtotal facturación</span>
                   <strong>{money(total)}</strong>
                 </div>
                 <div className="form-grid">
                   <label>
-                    Yape / transferencia (S/)
+                    Total de Yape / transferencia (S/)
                     <input
                       type="number"
                       min="0"
@@ -1939,7 +2139,7 @@ function OperationModal({
             {type === "product" && (
               <>
                 <div className="form-grid">
-                  <Field label="Código" name="code" value={r?.code} />
+                  <Field label="CODIGO" name="code" value={r?.code} />
                   <Field
                     label="Stock mínimo"
                     name="minStock"
@@ -1950,12 +2150,12 @@ function OperationModal({
                   />
                 </div>
                 <Field
-                  label="Nombre del producto"
+                  label="PRODUCTOS"
                   name="name"
                   value={r?.name}
                 />
                 <MoneyField
-                  label="Precio unitario de venta (S/)"
+                  label="PRECIO UNITARIO DE VENTA (S/)"
                   name="salePrice"
                   value={Number(r?.sale_price ?? 0) / 100}
                 />
@@ -1976,12 +2176,12 @@ function OperationModal({
                   />
                 </label>
                 <p className="muted">
-                  El costo de compra se usa para inversión y ganancia potencial;
+                  El precio de compra se usa para INVERSION y GANANCIA;
                   no cambia el historial de ventas.
                 </p>
                 {!r ? (
                   <Field
-                    label="Stock inicial"
+                    label="CANTIDAD EXISTENTE O STOCK inicial"
                     name="stock"
                     type="number"
                     min="0"
@@ -2042,6 +2242,123 @@ function OperationModal({
                 </p>
               </>
             )}
+            {type === "saleDelete" && (
+              <>
+                <p>
+                  ¿Eliminar la venta del <strong>{dateLabel(r.date)}</strong>{" "}
+                  por un total de <strong>{money(r.total)}</strong>?
+                </p>
+                {r.items?.length > 0 && (
+                  <div style={{ margin: "0.5rem 0" }}>
+                    {r.items.map((i: any, idx: number) => (
+                      <div
+                        key={idx}
+                        className="muted"
+                        style={{ fontSize: "0.85rem" }}
+                      >
+                        • {i.quantity} × {i.name} ({money(i.unit_price)} c/u)
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="info-message">
+                  Los productos vendidos se reintegrarán automáticamente al stock
+                  del inventario y el importe se descontará de la facturación y
+                  caja del día.
+                </p>
+              </>
+            )}
+            {type === "receiptDelete" && (
+              <>
+                <p>
+                  ¿Eliminar la entrada de{" "}
+                  <strong>{r.quantity} unidades</strong> de{" "}
+                  <strong>{r.name}</strong> ({r.code})?
+                </p>
+                <p className="info-message">
+                  Se descontarán {r.quantity} unidades del inventario actual. Si
+                  ya se vendió parte de esta mercadería y el stock actual no
+                  alcanza, la operación será rechazada para evitar inconsistencias.
+                </p>
+              </>
+            )}
+            {type === "expenseDelete" && (
+              <>
+                <p>
+                  ¿Eliminar el gasto <strong>"{r.detail}"</strong> (
+                  {kindLabel[r.kind]}) por <strong>{money(r.amount)}</strong>?
+                </p>
+                <p className="info-message">
+                  El importe se restituirá a los cálculos de caja neta del
+                  período.
+                </p>
+              </>
+            )}
+            {type === "treasuryDelete" && (
+              <>
+                <p>
+                  ¿Eliminar el movimiento de{" "}
+                  <strong>{kindLabel[r.kind]}</strong> por{" "}
+                  <strong>{money(r.amount)}</strong> — "{r.detail}"?
+                </p>
+                <p className="info-message">
+                  El movimiento se retirará de los cálculos de caja y disponible
+                  físico.
+                </p>
+              </>
+            )}
+            {type === "openingDelete" && (
+              <>
+                <p>
+                  ¿Anular la apertura de caja de la fecha{" "}
+                  <strong>{dateLabel(r.date)}</strong> por{" "}
+                  <strong>{money(r.amount)}</strong>?
+                </p>
+                <p className="info-message">
+                  La apertura quedará en cero y podrás registrar un nuevo monto
+                  inicial si lo necesitas.
+                </p>
+              </>
+            )}
+            {type === "bankDelete" && (
+              <>
+                <p>
+                  ¿Eliminar el movimiento de cuenta corriente de{" "}
+                  <strong>{kindLabel[r.kind]}</strong> por{" "}
+                  <strong>{money(r.amount)}</strong> — "{r.detail}"?
+                </p>
+                <p className="info-message">
+                  El saldo semanal y acumulado de cuenta corriente se
+                  recalcularán automáticamente.
+                </p>
+              </>
+            )}
+            {type === "productDelete" && (
+              <>
+                <p>
+                  ¿Eliminar el producto <strong>{r.name}</strong> ({r.code})?
+                </p>
+                <p className="info-message">
+                  El producto se eliminará del catálogo de inventario y no
+                  volverá a aparecer para nuevas ventas o pedidos.
+                </p>
+              </>
+            )}
+            {type === "resetAllData" && (
+              <>
+                <p>
+                  ¿Estás seguro de que deseas{" "}
+                  <strong>eliminar todos los datos del sistema</strong>?
+                </p>
+                <p className="info-message" style={{ borderColor: "#b43d32" }}>
+                  Esta acción eliminará todas las ventas, entradas de inventario,
+                  gastos, movimientos de tesorería, movimientos de cuenta corriente,
+                  aperturas y productos. El sistema se reiniciará completamente a
+                  cero. Las cuentas de acceso de usuarios se mantendrán para que
+                  puedas seguir iniciando sesión.
+                </p>
+              </>
+            )}
             {type === "resetPassword" && (
               <>
                 <p>
@@ -2090,16 +2407,16 @@ function OperationModal({
             )}
             <button
               className={
-                "button " + (type === "userDelete" ? "danger" : "orange")
+                "button " + (isDelete ? "danger" : "orange")
               }
               disabled={busy}
             >
               {busy
-                ? type === "userDelete"
+                ? isDelete
                   ? "Eliminando…"
                   : "Guardando…"
-                : type === "userDelete"
-                  ? "Eliminar usuario"
+                : isDelete
+                  ? titles[type]
                   : type === "password"
                     ? "Cambiar contraseña"
                     : "Guardar registro"}
