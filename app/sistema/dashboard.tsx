@@ -37,6 +37,7 @@ import ExpenseDashboard from "./expense-dashboard";
 import ProfitDashboard from "./profit-dashboard";
 import SaleLosses from "./sale-losses";
 import StockNotifications from "./stock-notifications";
+import MonthPicker from "./month-picker";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -533,15 +534,14 @@ export default function Dashboard({ user }: { user: User }) {
               </div>
               <div className="date-filter">
                 <label htmlFor="business-date">{period === "month" ? "Mes y año de referencia" : "Fecha de referencia"}</label>
-                <input
-                  id="business-date"
-                  type={period === "month" ? "month" : "date"}
-                  value={period === "month" ? date.slice(0, 7) : date}
-                  onChange={(e) => {
-                    if (!e.target.value) return;
-                    setDate(period === "month" ? e.target.value + "-01" : e.target.value);
-                  }}
-                />
+                {period === "month" ? <MonthPicker date={date} onChange={setDate} /> : (
+                  <input
+                    id="business-date"
+                    type="date"
+                    value={date}
+                    onChange={(e) => e.target.value && setDate(e.target.value)}
+                  />
+                )}
                 <button
                   className="icon-button"
                   aria-label="Actualizar datos"

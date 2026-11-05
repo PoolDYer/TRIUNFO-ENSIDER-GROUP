@@ -2001,9 +2001,17 @@ td small {
 @media (max-width: 550px) {
   .profit-bar-totals { grid-template-columns: 1fr; }
 }
-.date-filter input[type="month"] {
-  width: 210px;
-  max-width: 100%;
+.month-picker { position: relative; }
+.month-picker-trigger { min-width: 210px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--ink); padding: 10px 12px; font-size: 15px; }
+.month-picker-panel { position: absolute; top: calc(100% + 8px); right: 0; width: min(340px,calc(100vw - 32px)); background: white; border: 1px solid var(--line); border-radius: 10px; padding: 16px; box-shadow: 0 10px 35px #15213022; z-index: 50; }
+.month-picker-panel > label { display: block; font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 8px; }
+.month-picker-panel > select { width: 100%; font-size: 16px; }
+.month-picker-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; margin-top: 14px; }
+.month-picker-grid button { border: 1px solid var(--line); background: #fafbfc; color: #475569; border-radius: 6px; min-height: 42px; font-size: 14px; font-weight: 600; padding: 8px 4px; }
+.month-picker-grid button.selected { border-color: var(--orange); background: #fff0e5; color: #a6460c; }
+.month-picker-grid button:hover { background: #fff0e5; }
+@media (max-width: 760px) {
+  .date-filter .month-picker-panel > label { display: block; }
 }
 .google-help {
   max-width: 860px;
