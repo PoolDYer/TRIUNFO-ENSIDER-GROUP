@@ -160,13 +160,24 @@ function Empty({
 function Table({
   headers,
   children,
+  stickyProductColumns = false,
 }: {
   headers: string[];
   children: React.ReactNode;
+  stickyProductColumns?: boolean;
 }) {
   return (
-    <div className="table-scroll">
+    <div className={"table-scroll" + (stickyProductColumns ? " product-table" : "")}
+      tabIndex={stickyProductColumns ? 0 : undefined}
+      role={stickyProductColumns ? "region" : undefined}
+      aria-label={stickyProductColumns ? "Lista de productos: Código, Productos y Stock permanecen fijos al desplazarse horizontalmente" : undefined}>
       <table>
+        {stickyProductColumns && <colgroup>
+          <col style={{width:"var(--product-code-width)"}} />
+          <col style={{width:"var(--product-name-width)"}} />
+          <col style={{width:"var(--product-stock-width)"}} />
+          {headers.slice(3).map(header => <col key={header} />)}
+        </colgroup>}
         <thead>
           <tr>
             {headers.map((h) => (
@@ -1300,6 +1311,7 @@ export default function Dashboard({ user }: { user: User }) {
                         "Estado",
                         "Acciones",
                       ]}
+                      stickyProductColumns
                     >
                       {filtered.map((p) => (
                         <tr key={p.id}>

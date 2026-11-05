@@ -938,6 +938,37 @@ form > label {
   overflow: auto;
   max-width: 100%;
 }
+.product-table {
+  container-type: inline-size;
+  isolation: isolate;
+  --product-code-width: clamp(56px, 16cqw, 100px);
+  --product-name-width: clamp(90px, 34cqw, 280px);
+  --product-stock-width: clamp(72px, 24cqw, 260px);
+}
+.product-table table {
+  table-layout: fixed;
+  min-width: 1600px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.product-table :is(th, td) {
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+.product-table th { white-space: normal; }
+.product-table :is(th, td):nth-child(-n + 3) {
+  position: sticky;
+  z-index: 2;
+  background: #fff;
+}
+.product-table th:nth-child(-n + 3) { background: #fafbfc; z-index: 3; }
+.product-table :is(th, td):nth-child(1) { left: 0; padding-inline: 8px; }
+.product-table :is(th, td):nth-child(2) { left: var(--product-code-width); padding-inline: 12px; }
+.product-table :is(th, td):nth-child(3) {
+  left: calc(var(--product-code-width) + var(--product-name-width));
+  padding-inline: 8px;
+  box-shadow: 4px 0 6px -4px #a3acb9;
+}
 table {
   width: 100%;
   border-collapse: collapse;
