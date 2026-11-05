@@ -13,14 +13,14 @@ async function fixture() {
   await pg.exec(schema);
   const user: User = {
     id: randomUUID(),
-    name: "Administrador",
+    name: "Dueño",
     email: "administrador@triunfoensidergroup",
-    role: "SELLER",
+    role: "ADMIN",
     must_change_password: false,
   };
   const productId = randomUUID();
   await pg.query(
-    "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,$2,$3,'test','SELLER')",
+    "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,$2,$3,'test','ADMIN')",
     [user.id, user.name, user.email],
   );
   await pg.query(

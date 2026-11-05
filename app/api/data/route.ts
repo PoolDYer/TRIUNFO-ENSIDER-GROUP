@@ -7,6 +7,7 @@ import { report } from "@/lib/reports";
 import { financingReport } from "@/lib/financing";
 import { expenseDashboard } from "@/lib/expense-dashboard";
 import { profitDashboard } from "@/lib/profit-dashboard";
+import { canAccessSection } from "@/lib/roles";
 const options = { headers: { "Cache-Control": "private, no-store" } };
 export const runtime = "nodejs";
 export async function GET(req: Request) {
@@ -19,6 +20,8 @@ export async function GET(req: Request) {
       );
     const url = new URL(req.url);
     const view = url.searchParams.get("view") ?? "overview";
+    if (!canAccessSection(u.role, view))
+      throw new AppError("Solo el dueño tiene acceso a este apartado.", 403);
     if (view === "financing") {
       const financing = await transaction(async c => {
         await c.query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY");
@@ -117,7 +120,7 @@ export async function GET(req: Request) {
         [start, end],
       )
     ).rows;
-    const receipts = (
+    const receipts = u.role === "ADMIN" ? (
       await db.query(
         `SELECT r.*,p.name,p.code,u.name AS user_name,
           (SELECT json_agg(json_build_object('name',i.name,'code',i.code,'quantity',i.quantity,'total',i.quantity*i.unit_purchase_price) ORDER BY i.code)
@@ -126,7 +129,7 @@ export async function GET(req: Request) {
          WHERE r.date BETWEEN $1 AND $2 ORDER BY r.created_at DESC LIMIT 200`,
         [start, end],
       )
-    ).rows;
+    ).rows : [];
     const bankWeeks = (
       await db.query(
         "SELECT date_trunc('week',date)::date::text AS week, sum(CASE WHEN kind='INCOME' THEN amount ELSE 0 END) AS income,sum(CASE WHEN kind='WITHDRAWAL' THEN amount ELSE 0 END) AS withdrawals,sum(sum(CASE WHEN kind='INCOME' THEN amount ELSE -amount END)) OVER(ORDER BY date_trunc('week',date)) AS accumulated FROM bank_movements WHERE date <= $1 GROUP BY date_trunc('week',date) ORDER BY week DESC LIMIT 52",

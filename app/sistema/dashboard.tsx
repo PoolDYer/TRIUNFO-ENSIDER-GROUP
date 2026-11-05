@@ -28,7 +28,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import type { User } from "@/lib/auth";
-import { roleLabels } from "@/lib/roles";
+import { roleLabels, canAccessSection } from "@/lib/roles";
 import GoogleSheetsExport from "./google-sheets-export";
 import Financing from "./financing";
 import ReceiptFields from "./receipt-fields";
@@ -59,10 +59,10 @@ const dateLabel = (v: string) =>
 const nav = [
   { id: "overview", label: "Resumen", icon: LayoutDashboard },
   { id: "sales", label: "Ventas del día", icon: ShoppingBag },
-  { id: "receipts", label: "Control de entrada", icon: PackagePlus },
+  { id: "receipts", label: "Control de entrada", icon: PackagePlus, admin: true },
   { id: "expenses", label: "Gastos y caja", icon: Receipt },
-  { id: "profits", label: "Ganancias del día", icon: ChartNoAxesCombined },
-  { id: "financing", label: "Financiamiento", icon: Wallet },
+  { id: "profits", label: "Ganancias del día", icon: ChartNoAxesCombined, admin: true },
+  { id: "financing", label: "Financiamiento", icon: Wallet, admin: true },
   { id: "bank", label: "Cuenta corriente", icon: Landmark },
   { id: "reports", label: "Reportes", icon: ChartNoAxesCombined },
   { id: "products", label: "Lista de productos", icon: Boxes, admin: true },
@@ -360,7 +360,7 @@ export default function Dashboard({ user }: { user: User }) {
         </div>
         <nav>
           {nav
-            .filter((n) => !n.admin || admin)
+            .filter((n) => (!n.admin || admin) && canAccessSection(user.role, n.id))
             .map((n) => (
               <button
                 key={n.id}

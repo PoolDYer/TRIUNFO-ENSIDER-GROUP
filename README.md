@@ -14,7 +14,7 @@ Sistema web administrativo de inventario, ventas y caja, preparado para Vercel c
 - Gastos operativos y fijos con descripción, fecha, monto y usuario. Apertura física de caja única por fecha. Deudas manuales, depósitos y efectivo entregado.
 - Cuenta corriente con ingresos manuales exclusivos del dueño, retiros con motivo, consolidación semanal y acumulado histórico.
 - Inventarios y reportes diarios, semanales y mensuales, cantidades vendidas por producto y precio histórico, ingresos, egresos y caja. Generación de enlaces a reportes en Google Sheets e impresión.
-- Lista de productos exclusiva del dueño: stock, precio de venta, costo de compra, capital, inversión y ganancia potencial. Los administradores disponen solo del selector operativo necesario para vender y registrar entradas, sin costos ni rentabilidad del catálogo.
+- Lista de productos, Financiamiento, Ganancias del día, Control de entrada y Usuarios son exclusivos del Dueño. Los administradores conservan los apartados operativos restantes y el selector de productos necesario para vender, sin acceso al catálogo completo ni a entradas y pagos de financiamiento. Las restricciones se verifican en el menú y en las API; los datos de entradas tampoco se adjuntan a las respuestas compartidas de los administradores.
 - Auditoría de las operaciones y conservación de las entradas/ventas del Excel original como referencia.
 
 ## Nombres de roles
@@ -135,7 +135,7 @@ Actualizar el esquema con `npm run db:migrate` antes de iniciar esta versión; d
 
 En Control de entrada, el distribuidor es **CORP. G.S. S.A.** Marca los productos del pedido y edita la cantidad de cada uno. El subtotal de cada producto es cantidad × precio unitario de compra. Al contado, el monto pagado equivale al total. A crédito, se aplica un interés fijo del 2 % una sola vez al total del pedido: S/ 200 genera una deuda de S/ 204. Al guardar se actualizan todos los stocks y se crea una sola deuda por pedido. Los abonos se registran en Financiamiento → Pagos. El servidor calcula los importes desde el catálogo y conserva el detalle y los precios históricos de cada pedido.
 
-Financiamiento aparece debajo de Gastos y caja y muestra todos los créditos y pagos, sin filtros diarios, semanales ni mensuales. Cada registro conserva su fecha. Se muestran deuda total, pagos acumulados y saldo actual. No se permiten pagos anteriores al crédito ni que superen el saldo; los abonos simultáneos se validan bloqueando la deuda. Tanto dueños como administradores pueden registrar entradas y pagos.
+Financiamiento aparece debajo de Gastos y caja y muestra todos los créditos y pagos, sin filtros diarios, semanales ni mensuales. Cada registro conserva su fecha. Se muestran deuda total, pagos acumulados y saldo actual. No se permiten pagos anteriores al crédito ni que superen el saldo; los abonos simultáneos se validan bloqueando la deuda. Solo el Dueño puede consultar este apartado y registrar entradas y pagos.
 
 Para actualizar una instalación existente, detener el servidor local y ejecutar `npm run db:migrate`; después volver a iniciarlo. Este comando actualiza únicamente el esquema y conserva cuentas e inventario sin reimportar productos. Los créditos anteriores conservan el saldo original del pedido, sin interés retroactivo. Los pagos de financiamiento no descuentan caja automáticamente; registrar la salida de caja por separado cuando corresponda.
 

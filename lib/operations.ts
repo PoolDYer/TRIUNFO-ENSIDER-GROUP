@@ -24,6 +24,7 @@ function admin(u: User) {
     throw new AppError("Solo el dueño tiene acceso.", 403);
 }
 export async function operate(c: DB, u: User, action: string, input: unknown) {
+  if (["receiptOrder", "receipt", "financingPayment"].includes(action)) admin(u);
   let entity = "";
   if (action === "sale") {
     entity = await registerSale(c,u,input);

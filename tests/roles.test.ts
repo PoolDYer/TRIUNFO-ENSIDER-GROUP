@@ -4,7 +4,7 @@ import {randomUUID} from "node:crypto";
 import {PGlite} from "@electric-sql/pglite";
 import {schema} from "../lib/schema";
 import {operate} from "../lib/operations";
-import {roleLabels} from "../lib/roles";
+import {roleLabels,canAccessSection,ownerOnlySections} from "../lib/roles";
 import type {DB} from "../lib/db";
 import type {User} from "../lib/auth";
 
@@ -22,8 +22,21 @@ test("Dueño conserva los privilegios exclusivos y las nuevas cuentas son Admini
     const administrator:User={...owner,id:created.id,role:row.role};
     await assert.rejects(run(administrator,"user",{}),/Solo el dueño/);
     await assert.rejects(run(administrator,"product",{}),/Solo el dueño/);
+    for (const action of ["receiptOrder","receipt","financingPayment"])
+      await assert.rejects(run(administrator,action,{}),error=>error instanceof Error && /Solo el dueño/.test(error.message) && (error as {status?:number}).status===403);
     await assert.rejects(run(owner,"userDelete",{id:owner.id}),/propia cuenta/);
     await run(owner,"userStatus",{id:created.id,active:false});
     assert.equal((await pg.query<{active:boolean}>("SELECT active FROM users WHERE id=$1",[created.id])).rows[0].active,false);
   } finally {await pg.close();}
+});
+
+test("Los cinco apartados indicados son exclusivos del Dueño y el resto operativo sigue accesible",()=>{
+ for(const section of ownerOnlySections){
+  assert.equal(canAccessSection("ADMIN",section),true);
+  assert.equal(canAccessSection("SELLER",section),false);
+ }
+ for(const section of ["overview","sales","expenses","bank","reports"]){
+  assert.equal(canAccessSection("ADMIN",section),true);
+  assert.equal(canAccessSection("SELLER",section),true);
+ }
 });

@@ -13,8 +13,8 @@ async function fixture() {
   await pg.exec(schema);
   const u: User = {
     id: randomUUID(),
-    role: "SELLER",
-    name: "Administrador",
+    role: "ADMIN",
+    name: "Dueño",
     email: "ventas@triunfoensidergroup",
     must_change_password: false,
   };
