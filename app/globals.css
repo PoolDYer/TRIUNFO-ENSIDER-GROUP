@@ -494,12 +494,17 @@ form > label {
   flex-direction: column;
   padding: 28px 16px 17px;
   z-index: 30;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .sidebar-brand {
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 0 8px;
+  flex-shrink: 0;
 }
 .sidebar-brand img {
   width: 50px;
@@ -526,12 +531,20 @@ form > label {
   align-items: center;
   gap: 8px;
   padding: 30px 13px 15px;
+  flex-shrink: 0;
 }
 .sidebar nav {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
 }
+.sidebar nav .nav-item { flex-shrink: 0; }
 .nav-item {
   display: flex;
   align-items: center;
@@ -570,6 +583,7 @@ form > label {
 .sidebar-bottom {
   margin-top: auto;
   padding-top: 30px;
+  flex-shrink: 0;
 }
 .role-note {
   border-bottom: 1px solid var(--line);
