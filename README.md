@@ -114,6 +114,12 @@ node scripts/load-test.mjs
 
 Ejecuta diez rondas de consultas simultáneas, informa errores y latencias P50/P95 y cierra sus sesiones. No modifica inventario ni caja. Comparar los resultados con métricas de Vercel y conexiones de la base antes de concluir que el despliegue soporta diez usuarios. Las pruebas locales no garantizan disponibilidad, tiempos de respuesta ni límites de un plan específico.
 
+## Detalle de ganancias y comprobaciones
+
+Ganancias calcula **ventas − costo histórico de lo vendido − gastos operativos − gastos fijos − costo histórico de los productos perdidos**. Muestra cada paso, margen bruto, total descontado, margen neto y el detalle de productos, gastos y pérdidas que sustenta los importes. El valor de venta de lo perdido es informativo; solo su costo se resta de la ganancia, una vez. Los gastos fijos se descuentan según su fecha registrada, sin prorrateo automático. Los pagos de financiamiento no se tratan como gasto automáticamente; cualquier interés o gasto adicional debe registrarse como gasto para incluirlo.
+
+La comprobación compara cada venta con sus líneas y comprueba los costos históricos. Si faltan costos o el total de una venta no coincide con su detalle, la ganancia/pérdida queda pendiente en lugar de informar un resultado definitivo. Se conserva visible el detalle conocido para identificar la diferencia. Estos resultados representan la fórmula administrativa sobre lo registrado, no el saldo físico de caja.
+
 ## Pérdida de productos al registrar ventas
 
 En Registrar venta, las pérdidas se indican por producto y cantidad en una lista separada. Son unidades adicionales a las vendidas: vender dos unidades y perder una descuenta tres unidades del stock. El sistema calcula el «Monto total de deuda / pérdida de productos» con el precio de venta del catálogo, conserva ese precio histórico y solicita el motivo. La pérdida no se cobra al cliente ni se vuelve a descontar del efectivo por recibir; el total vendido sigue incluyendo solo las unidades vendidas. En Ganancias se resta el costo histórico de compra de las unidades perdidas, además de la inversión de lo vendido y los gastos. Los importes de deuda de ventas antiguas se conservan como históricos y no se convierten en pérdidas de inventario.

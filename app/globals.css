@@ -1954,6 +1954,16 @@ td small {
   .loss-line { grid-template-columns: 1fr 1fr; }
   .loss-line > label:first-child { grid-column: 1 / -1; }
 }
+.profit-calculation { margin: 0; padding: 0 23px; }
+.profit-calculation > div { display: flex; justify-content: space-between; gap: 18px; padding: 14px 0; border-top: 1px solid var(--line); font-size: 18px; line-height: 1.5; }
+.profit-calculation dd { margin: 0; font-weight: 650; white-space: nowrap; }
+.profit-calculation > div:last-child { font-weight: 700; font-size: 21px; }
+.profit-checks { margin: 0; padding: 0 25px 22px 42px; font-size: 16px; line-height: 1.7; }
+.profit-checks li + li { margin-top: 9px; }
+@media (max-width: 550px) {
+  .profit-calculation > div { flex-wrap: wrap; gap: 6px; }
+  .profit-calculation dd { margin-left: auto; }
+}
 .google-help {
   max-width: 860px;
   margin: 50px auto;
