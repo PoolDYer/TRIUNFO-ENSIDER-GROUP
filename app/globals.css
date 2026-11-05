@@ -2001,6 +2001,10 @@ td small {
 @media (max-width: 550px) {
   .profit-bar-totals { grid-template-columns: 1fr; }
 }
+.date-filter input[type="month"] {
+  width: 210px;
+  max-width: 100%;
+}
 .google-help {
   max-width: 860px;
   margin: 50px auto;

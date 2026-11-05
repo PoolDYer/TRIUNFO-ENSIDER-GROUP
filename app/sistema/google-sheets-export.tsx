@@ -131,7 +131,7 @@ export default function GoogleSheetsExport({
                 <h2 id="google-export-title">Reporte en Google Sheets</h2>
                 <p>
                   {{ day: "Diario", week: "Semanal", month: "Mensual" }[period]}{" "}
-                  · Fecha de referencia: {date}
+                  · {period === "month" ? "Mes de referencia" : "Fecha de referencia"}: {period === "month" ? new Date(date + "T12:00:00Z").toLocaleDateString("es-PE", {timeZone:"America/Lima",month:"long",year:"numeric"}) : date}
                 </p>
               </div>
               <button
