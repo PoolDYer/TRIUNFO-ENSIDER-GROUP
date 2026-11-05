@@ -10,7 +10,7 @@ const saleSchema = z.object({
   items:z.array(item.extend({unitPrice:moneySchema})).min(1).max(50),
   losses:z.array(item).max(50).default([]),
   digital:moneySchema,debt:moneySchema.default(0),
-  method:z.enum(["YAPE","TRANSFER","NONE"]),reference:z.string().trim().max(120),
+  method:z.enum(["YAPE","TRANSFER","NONE"]),reference:z.string().trim().max(120).default(""),
   detail:z.string().trim().max(500).default(""),
 });
 
@@ -25,8 +25,8 @@ export async function registerSale(c:DB,u:User,input:unknown) {
   const digital=cents(p.digital),cash=total-digital;
   if(!Number.isSafeInteger(total)||total<=0||cash<0)
     throw new AppError("El pago digital no puede superar la facturación. Revisa los importes.");
-  if(digital>0&&(p.method==="NONE"||!p.reference))
-    throw new AppError("Indica el medio digital y su código de operación.");
+  if(digital>0&&p.method==="NONE")
+    throw new AppError("Indica el medio digital del pago.");
   if(p.losses.length&&!p.detail) throw new AppError("Indica el motivo de la pérdida de productos.");
   const quantities=new Map<string,number>();
   for(const i of [...p.items,...p.losses]) quantities.set(i.productId,(quantities.get(i.productId)??0)+i.quantity);

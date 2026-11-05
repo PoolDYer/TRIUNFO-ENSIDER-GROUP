@@ -1838,9 +1838,9 @@ function OperationModal({
                     </select>
                   </label>
                   <Field
-                    label="Código de operación"
+                    label="Código de operación (opcional)"
                     name="reference"
-                    required={Number(digital) > 0}
+                    required={false}
                     placeholder="Código de Yape o transferencia"
                   />
                 </div>

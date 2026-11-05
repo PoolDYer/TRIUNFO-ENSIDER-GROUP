@@ -54,3 +54,16 @@ test("Valida stock combinado, motivo, pagos excesivos y cantidades sin dejar mov
    assert.equal((await pg.query<{stock:number}>("SELECT stock FROM products WHERE id=$1",[p])).rows[0].stock,3);
  }finally{await pg.close();}
 });
+
+test("El código de operación es opcional en Yape y transferencias, pero el medio digital sigue siendo obligatorio",async()=>{
+ const {pg,run,sale}=await fixture();try {
+   const yape={...sale(),losses:[],reference:""};
+   await run(yape);
+   const transfer={...sale(),losses:[],method:"TRANSFER"};
+   delete (transfer as {reference?:string}).reference;
+   await run(transfer);
+   const rows=(await pg.query<{reference:string;method:string}>("SELECT reference,method FROM sales ORDER BY method")).rows;
+   assert.deepEqual(rows,[{reference:"",method:"TRANSFER"},{reference:"",method:"YAPE"}]);
+   await assert.rejects(run({...sale(),method:"NONE",reference:""}),/medio digital/);
+ }finally{await pg.close();}
+});
