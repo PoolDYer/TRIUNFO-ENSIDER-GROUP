@@ -19,7 +19,7 @@ test("La redirección no habilita solicitudes de otros orígenes",()=>{
  const previous=process.env.APP_URL;
  process.env.APP_URL='https://triunfo-ensider-group.vercel.app';
  try{
-  assert.doesNotThrow(()=>checkOrigin(new Request('https://triunfo-ensider-group.vercel.app/api/auth',{headers:{Origin:process.env.APP_URL}})));
+  assert.doesNotThrow(()=>checkOrigin(new Request('https://triunfo-ensider-group.vercel.app/api/auth',{headers:{Origin:'https://triunfo-ensider-group.vercel.app'}})));
   assert.throws(()=>checkOrigin(new Request('https://triunfo-ensider-group.vercel.app/api/auth',{headers:{Origin:'https://otro.example'}})),/Origen/);
  }finally{if(previous===undefined)delete process.env.APP_URL;else process.env.APP_URL=previous;}
 });
