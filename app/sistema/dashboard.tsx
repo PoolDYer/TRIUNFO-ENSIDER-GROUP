@@ -259,11 +259,12 @@ export default function Dashboard({ user }: { user: User }) {
     })
       .then(async (r) => {
         const d = await r.json();
+        if (controller.signal.aborted) return;
         if (!r.ok) throw new Error(d.error);
         setData(d);
       })
       .catch((e) => {
-        if (e.name !== "AbortError") setError(e.message);
+        if (!controller.signal.aborted && e.name !== "AbortError") setError(e.message);
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);

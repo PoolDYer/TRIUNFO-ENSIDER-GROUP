@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { db, transaction } from "@/lib/db";
 import { AppError, requireUser } from "@/lib/auth";
 import { dateSchema, periodRange, today } from "@/lib/validation";
@@ -133,6 +134,8 @@ export async function GET(req: Request) {
       options,
     );
   } catch (e) {
+    if (e instanceof z.ZodError)
+      return NextResponse.json({ error: "Fecha inválida. Selecciona una fecha válida." }, { status: 400 });
     if (e instanceof AppError)
       return NextResponse.json({ error: e.message }, { status: e.status });
     return NextResponse.json(
