@@ -654,6 +654,7 @@ form > label {
   color: #454c55;
 }
 .topbar-date {
+  font-weight: 700;
   font-size: 13px;
   color: #9197a0;
 }

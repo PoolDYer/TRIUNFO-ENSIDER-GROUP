@@ -420,6 +420,7 @@ export default function Dashboard({ user }: { user: User }) {
           <div className="topbar-actions">
           {admin && !user.must_change_password && <StockNotifications refresh={refresh} />}
           <span className="topbar-date">
+            Hoy: {" "}
             {new Date().toLocaleDateString("es-PE", {
               timeZone: "America/Lima",
               weekday: "long",
