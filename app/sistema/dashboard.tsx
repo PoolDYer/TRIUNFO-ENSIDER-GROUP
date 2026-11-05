@@ -31,6 +31,7 @@ import type { User } from "@/lib/auth";
 import GoogleSheetsExport from "./google-sheets-export";
 import Financing from "./financing";
 import ReceiptFields from "./receipt-fields";
+import FinancialGroups from "./financial-groups";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -1085,34 +1086,7 @@ export default function Dashboard({ user }: { user: User }) {
                     <div className="panel-heading">
                       <h2>Control financiero</h2>
                     </div>
-                    <div className="report-ledger">
-                      {[
-                        ["Facturación", t.billing],
-                        ["Ingresos en efectivo", t.cashReceipts],
-                        ["Yape / transferencias", t.digital],
-                        ["Gastos operativos", t.operating],
-                        ["Deudas", t.debt],
-                        ["Caja según ejemplo", t.excelCash],
-                        ["Gastos fijos", t.fixed],
-                        [
-                          "Caja neta después de gastos fijos y deudas",
-                          t.netCash,
-                        ],
-                        ["Aperturas de caja registradas", t.opening],
-                        ["Depositado", t.deposits],
-                        ["Entregado", t.deliveries],
-                        ["Disponible calculado", t.available],
-                        ["Ingresos de cuenta corriente", t.bankIncome],
-                        ["Retiros de cuenta corriente", t.bankWithdrawals],
-                        ["Neto de cuenta corriente del período", t.bankNet],
-                        ["Acumulado de cuenta corriente", t.bankAccumulated],
-                      ].map(([l, v]) => (
-                        <div key={l}>
-                          <span>{l}</span>
-                          <strong>{money(v)}</strong>
-                        </div>
-                      ))}
-                    </div>
+                    <FinancialGroups totals={t} period={period} />
                     <p className="panel-hint">
                       Caja según ejemplo: facturación − pagos digitales − gastos
                       operativos{period === "day" ? " − deudas" : ""}. Caja
