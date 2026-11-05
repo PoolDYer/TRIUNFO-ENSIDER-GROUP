@@ -259,6 +259,14 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
         ],
       );
     entity = p.id;
+  } else if (action === "productDelete") {
+    admin(u);
+    const p = z.object({ id }).parse(input);
+    const history = await c.query("SELECT 1 FROM sale_items WHERE product_id=$1 UNION ALL SELECT 1 FROM receipts WHERE product_id=$1 UNION ALL SELECT 1 FROM receipt_items WHERE product_id=$1 LIMIT 1", [p.id]);
+    if (history.rows.length) throw new AppError("El producto tiene ventas o entradas registradas. Desactívalo para conservar su historial.",409);
+    const result = await c.query("DELETE FROM products WHERE id=$1 RETURNING id",[p.id]);
+    if (!result.rows.length) throw new AppError("El producto ya no existe.",404);
+    entity = p.id;
   } else if (action === "productStatus") {
     admin(u);
     const p = z.object({ id, active: z.boolean() }).parse(input);
