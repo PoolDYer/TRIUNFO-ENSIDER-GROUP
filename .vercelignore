@@ -1,0 +1,8 @@
+.work/
+.local-db/
+.env*
+CREDENCIALES.txt
+*.docx
+*.xlsx
+*.pdf
+test-results/

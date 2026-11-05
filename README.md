@@ -31,19 +31,18 @@ Documentación: [PostgreSQL en Vercel](https://vercel.com/docs/postgres), [conex
 
 ## Desarrollo local
 
-Requiere Node.js 22.13 o superior. En esta carpeta ya se preparó `.env.local` para una base PostgreSQL embebida de desarrollo mediante PGlite. Sus datos permanecen en `.local-db/`, fuera de Git. Esta modalidad se rechaza en producción y en Vercel.
+Requiere Node.js 24.x. Esta instalación utiliza **Supabase también desde el servidor local**: `.env.local` tiene `LOCAL_DATABASE=false`, `DATABASE_URL` y la CA oficial en `DATABASE_SSL_CA`. Los datos anteriores de PGlite se transfirieron y verificaron; `.local-db/` y su respaldo permanecen fuera de Git y ya no son la base activa.
 
 ```powershell
 npm ci
-npm run db:setup
 npm run dev
 ```
 
-Abrir `http://127.0.0.1:3000`. Las credenciales locales generadas están en `.work/accesos-locales.txt`, excluidas del repositorio. Si se clona el repositorio en otra máquina, crear `.env.local` con `LOCAL_DATABASE=true` y las cuatro variables `INITIAL_*_PASSWORD` del ejemplo, usando contraseñas diferentes de al menos doce caracteres.
+Abrir `http://127.0.0.1:3000` e ingresar con las cuentas existentes. En otra máquina, configurar de forma privada las mismas variables de conexión. Las operaciones locales afectan la base compartida de Supabase; para pruebas que modifiquen datos usar otra base.
 
-No ejecutar dos procesos que abran el mismo directorio PGlite simultáneamente: detener el servidor antes de ejecutar `db:setup`. En producción se usa PostgreSQL real con conexiones independientes.
+PGlite sigue disponible como alternativa aislada con `LOCAL_DATABASE=true`, exclusivamente fuera de producción. No abrir su mismo directorio desde dos procesos simultáneamente. Las pruebas automatizadas crean bases independientes y no modifican Supabase.
 
-Al actualizar una instalación existente, ejecutar `npm run db:setup` antes de iniciar la nueva versión. La preparación aplica también la migración para eliminar administradores conservando sus operaciones: añade la fecha de eliminación y permite reutilizar el correo en una cuenta nueva. No cambia las contraseñas ni los datos existentes.
+No ejecutar `db:setup` en esta instalación migrada. Para actualizar el esquema en Supabase seguir `db:supabase:prepare` en [SUPABASE.md](SUPABASE.md), usando Session pooler y conservando la protección de las tablas.
 
 ## Preparación y despliegue en Vercel
 
