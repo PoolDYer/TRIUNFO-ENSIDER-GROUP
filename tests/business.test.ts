@@ -505,13 +505,8 @@ test("Gastos, deudas, apertura y entregas no multiplican la facturación", async
       detail: "Deuda",
       amount: 10,
     });
-    await f.run("treasury", {
-      id: randomUUID(),
-      date: "2026-10-30",
-      kind: "DELIVERY",
-      detail: "Entrega",
-      amount: 5,
-    });
+    // Entrega histórica anterior al formulario de entregas con validación de saldo.
+    await f.c.query("INSERT INTO treasury(id,date,kind,detail,amount,user_id) VALUES($1,'2026-10-30','DELIVERY','Entrega anterior',500,$2)",[randomUUID(),f.user.id]);
     await f.run("opening", { date: "2026-10-30", amount: 20 });
     await assert.rejects(
       f.run("opening", { date: "2026-10-30", amount: 20 }),

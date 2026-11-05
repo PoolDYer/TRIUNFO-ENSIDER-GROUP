@@ -17,6 +17,14 @@ Sistema web administrativo de inventario, ventas y caja, preparado para Vercel c
 - Lista de productos, Financiamiento, Ganancias del día, Control de entrada y Usuarios son exclusivos del Dueño. Los administradores conservan los apartados operativos restantes y el selector de productos necesario para vender, sin acceso al catálogo completo ni a entradas y pagos de financiamiento. Las restricciones se verifican en el menú y en las API; los datos de entradas tampoco se adjuntan a las respuestas compartidas de los administradores.
 - Auditoría de las operaciones y conservación de las entradas/ventas del Excel original como referencia.
 
+## Movimientos de la caja y entregas al dueño
+
+En **Gastos y caja → Movimientos de la caja**, administradores y Dueño pueden registrar efectivo y Yape entregados al dueño, por separado o en una misma entrega. Se usan los saldos acumulados de los días pendientes hasta la fecha actual de Lima, independientemente del filtro diario, semanal o mensual del resto del módulo.
+
+El límite físico es **aperturas acumuladas + cobros en efectivo − gastos fijos y operativos − deudas manuales − depósitos − entregas físicas anteriores**. El límite de Yape es **cobros con medio Yape − Yape ya entregado**; las transferencias bancarias y los registros con fecha futura no se suman al Yape disponible. Cada registro compara nuevamente los saldos en el servidor, valida el importe y guarda responsable, fecha/hora automática, importes y saldos previos. Las escrituras que modifican caja se serializan para evitar que entregas simultáneas excedan el saldo.
+
+Las entregas físicas se vinculan a una sola salida de tesorería para descontar efectivo una vez. Entregar Yape no descuenta caja física ni ganancias. Se conserva un historial paginado con entregas parciales, totales y saldos posteriores. «Total disponible» significa todo el saldo disponible en ese momento; nuevos cobros pueden generar un pendiente posterior. Las entregas antiguas de efectivo aparecen como registros anteriores sin inventar sus saldos previos. Una salida vinculada a una entrega no puede eliminarse por separado. Los importes e identificadores impiden duplicar entregas por reintentos.
+
 ## Nombres de roles
 
 Los datos de ganancias, inversión, costos de compra y márgenes son privados del Dueño. Las respuestas de reportes y la entrada a la exportación de Google Sheets usan una lista explícita de datos operativos para administradores, evitando transmitir campos de rentabilidad incluso si se añaden posteriormente al cálculo interno. Los saldos de caja se mantienen como datos operativos y no representan ganancias.

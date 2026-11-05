@@ -16,6 +16,7 @@ import { financingInterest } from "./financing";
 import { registerReceiptOrder } from "./receipt-order";
 import { registerSale } from "./register-sale";
 import { syncStockNotifications } from "./stock-notifications";
+import {lockCashMovements,registerCashHandoff} from "./cash-handoffs";
 const detail = z.string().trim().min(1).max(500);
 const id = z.string().uuid();
 const base = { id, date: dateSchema };
@@ -25,8 +26,14 @@ function admin(u: User) {
 }
 export async function operate(c: DB, u: User, action: string, input: unknown) {
   if (["receiptOrder", "receipt", "financingPayment"].includes(action)) admin(u);
+  if(["sale","saleDelete","expense","expenseDelete","treasury","treasuryDelete","opening","openingDelete","cashHandoff","resetAllData"].includes(action))
+    await lockCashMovements(c);
   let entity = "";
-  if (action === "sale") {
+  if(action === "cashHandoff") {
+    const handoff=await registerCashHandoff(c,u,input);
+    if(!handoff.created)return {ok:true,id:handoff.id};
+    entity=handoff.id;
+  } else if (action === "sale") {
     entity = await registerSale(c,u,input);
   } else if (action === "receiptOrder") {
     entity = await registerReceiptOrder(c,u,input);
@@ -111,6 +118,8 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       .parse(input);
     if (!kinds.includes(p.kind))
       throw new AppError("Tipo de movimiento inválido.");
+    if(action === "treasury" && p.kind === "DELIVERY")
+      throw new AppError("Registra las entregas al dueño desde Movimientos de la caja para validar el efectivo y Yape disponibles.",409);
     if (action === "bank" && p.kind === "INCOME") admin(u);
     const table =
       action === "expense"
@@ -242,6 +251,8 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
   } else if (action === "treasuryDelete") {
     admin(u);
     const p = z.object({ id }).parse(input);
+    if((await c.query("SELECT id FROM cash_handoffs WHERE treasury_id=$1",[p.id])).rows.length)
+      throw new AppError("Esta salida pertenece a una entrega al dueño y se conserva en su historial.",409);
     const { rows } = await c.query(
       "DELETE FROM treasury WHERE id=$1 RETURNING id",
       [p.id],
@@ -291,6 +302,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
   } else if (action === "resetAllData") {
     admin(u);
     z.object({ confirm: z.literal(true) }).parse(input);
+    await c.query("DELETE FROM cash_handoffs");
     await c.query("DELETE FROM financing_payments");
     await c.query("DELETE FROM sale_items");
     await c.query("DELETE FROM sales");

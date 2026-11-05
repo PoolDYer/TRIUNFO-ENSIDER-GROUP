@@ -121,4 +121,21 @@ CREATE TABLE IF NOT EXISTS stock_notifications (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS stock_notifications_active_idx ON stock_notifications(product_id) WHERE resolved_at IS NULL;
 CREATE INDEX IF NOT EXISTS stock_notifications_created_idx ON stock_notifications(created_at DESC);
+CREATE TABLE IF NOT EXISTS cash_movement_guard (
+ id integer PRIMARY KEY CHECK(id=1)
+);
+CREATE TABLE IF NOT EXISTS cash_handoffs (
+ id uuid PRIMARY KEY, date date NOT NULL,
+ cash_amount bigint NOT NULL CHECK(cash_amount >= 0),
+ yape_amount bigint NOT NULL CHECK(yape_amount >= 0),
+ cash_available_before bigint NOT NULL CHECK(cash_available_before >= 0),
+ yape_available_before bigint NOT NULL CHECK(yape_available_before >= 0),
+ treasury_id uuid UNIQUE REFERENCES treasury(id),
+ detail text NOT NULL DEFAULT '', user_id uuid NOT NULL REFERENCES users(id),
+ created_at timestamptz NOT NULL DEFAULT now(),
+ CHECK(cash_amount > 0 OR yape_amount > 0),
+ CHECK(cash_amount <= cash_available_before AND yape_amount <= yape_available_before),
+ CHECK((cash_amount = 0 AND treasury_id IS NULL) OR (cash_amount > 0 AND treasury_id IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS cash_handoffs_date_idx ON cash_handoffs(date,created_at DESC);
 `;

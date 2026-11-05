@@ -38,6 +38,7 @@ import ProfitDashboard from "./profit-dashboard";
 import SaleLosses from "./sale-losses";
 import StockNotifications from "./stock-notifications";
 import MonthPicker from "./month-picker";
+import CashMovements from "./cash-movements";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -93,6 +94,7 @@ const actionLabel: Record<string, string> = {
   expense: "Gasto registrado",
   expenseDelete: "Gasto eliminado",
   treasury: "Movimiento de caja",
+  cashHandoff: "Entrega de efectivo / Yape al dueño",
   treasuryDelete: "Movimiento de caja eliminado",
   bank: "Cuenta corriente",
   bankDelete: "Movimiento bancario eliminado",
@@ -257,6 +259,7 @@ function MoneyField({
 }
 export default function Dashboard({ user }: { user: User }) {
   const router = useRouter();
+  const [cashMovementsOpen,setCashMovementsOpen]=useState(false);
   const [view, setView] = useState("overview"),
     [date, setDate] = useState(day),
     [period, setPeriod] = useState("day"),
@@ -868,6 +871,7 @@ export default function Dashboard({ user }: { user: User }) {
               )}
               {view === "expenses" && (
                 <>
+                  <CashMovements open={cashMovementsOpen} onToggle={()=>setCashMovementsOpen(value=>!value)} refreshKey={refresh} onSaved={()=>{setNotice("Entrega al dueño registrada.");setRefresh(value=>value+1);}}/>
                   {data.expenseDashboard && <ExpenseDashboard data={data.expenseDashboard} period={period} />}
                   <div className="small-grid">
                     <button
@@ -887,7 +891,7 @@ export default function Dashboard({ user }: { user: User }) {
                     >
                       <ArrowUpRight size={22} />
                       <div>
-                        <strong>Deudas, depósitos y entregas</strong>
+                        <strong>Deudas y depósitos</strong>
                         <span>Registrar salida de efectivo</span>
                       </div>
                       <Plus size={18} />
@@ -2108,7 +2112,6 @@ function OperationModal({
                       Deuda / descuento manual de caja
                     </option>
                     <option value="DEPOSIT">Efectivo depositado</option>
-                    <option value="DELIVERY">Efectivo entregado</option>
                   </select>
                 </label>
                 <Field label="Motivo del movimiento" name="detail" />
