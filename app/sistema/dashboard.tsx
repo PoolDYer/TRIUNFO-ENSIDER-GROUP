@@ -39,6 +39,7 @@ import SaleLosses from "./sale-losses";
 import StockNotifications from "./stock-notifications";
 import MonthPicker from "./month-picker";
 import CashMovements from "./cash-movements";
+import UserRecordsDelete from "./user-records-delete";
 const numericText = (value: string) => value.replace(/^0+(?=\d)/, "");
 const money = (v: unknown) =>
   new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" }).format(
@@ -106,6 +107,7 @@ const actionLabel: Record<string, string> = {
   user: "Usuario creado",
   userStatus: "Estado de usuario",
   userDelete: "Usuario eliminado",
+  userRecordsDelete: "Registros del administrador eliminados",
   resetPassword: "Contraseña restablecida",
   password: "Cambio de contraseña",
   resetAllData: "Reinicio total de datos",
@@ -260,6 +262,7 @@ function MoneyField({
 export default function Dashboard({ user }: { user: User }) {
   const router = useRouter();
   const [cashMovementsOpen,setCashMovementsOpen]=useState(false);
+  const [recordsUser,setRecordsUser]=useState<{id:string;name:string;email:string}|null>(null);
   const [view, setView] = useState("overview"),
     [date, setDate] = useState(day),
     [period, setPeriod] = useState("day"),
@@ -1444,6 +1447,9 @@ export default function Dashboard({ user }: { user: User }) {
                                 {r.active ? "Desactivar" : "Activar"}
                               </button>
                               {r.role === "SELLER" && (
+                                <button className="text-button danger-text" onClick={()=>setRecordsUser(r)}>Eliminar registros</button>
+                              )}
+                              {r.role === "SELLER" && (
                                 <button
                                   className="text-button danger-text"
                                   onClick={() =>
@@ -1565,6 +1571,7 @@ export default function Dashboard({ user }: { user: User }) {
           </footer>
         </main>
       </div>
+      {admin&&recordsUser&&<UserRecordsDelete user={recordsUser} onClose={()=>setRecordsUser(null)} onSaved={()=>{setRecordsUser(null);setRefresh(value=>value+1);setNotice("Los registros del administrador fueron eliminados y los saldos se recalcularon.");}}/>}
       {modal && (
         <OperationModal
           modal={modal}

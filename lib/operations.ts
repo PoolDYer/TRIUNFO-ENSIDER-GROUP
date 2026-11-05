@@ -17,6 +17,7 @@ import { registerReceiptOrder } from "./receipt-order";
 import { registerSale } from "./register-sale";
 import { syncStockNotifications } from "./stock-notifications";
 import {lockCashMovements,registerCashHandoff} from "./cash-handoffs";
+import {deleteUserRecords} from "./user-records";
 const detail = z.string().trim().min(1).max(500);
 const id = z.string().uuid();
 const base = { id, date: dateSchema };
@@ -25,11 +26,13 @@ function admin(u: User) {
     throw new AppError("Solo el dueño tiene acceso.", 403);
 }
 export async function operate(c: DB, u: User, action: string, input: unknown) {
-  if (["receiptOrder", "receipt", "financingPayment"].includes(action)) admin(u);
-  if(["sale","saleDelete","expense","expenseDelete","treasury","treasuryDelete","opening","openingDelete","cashHandoff","resetAllData"].includes(action))
-    await lockCashMovements(c);
+  if (["receiptOrder", "receipt", "financingPayment", "userRecordsDelete"].includes(action)) admin(u);
+  // El borrado de un administrador debe ser atómico frente a cualquier operación.
+  await lockCashMovements(c);
   let entity = "";
-  if(action === "cashHandoff") {
+  if(action === "userRecordsDelete") {
+    entity=await deleteUserRecords(c,input);
+  } else if(action === "cashHandoff") {
     const handoff=await registerCashHandoff(c,u,input);
     if(!handoff.created)return {ok:true,id:handoff.id};
     entity=handoff.id;

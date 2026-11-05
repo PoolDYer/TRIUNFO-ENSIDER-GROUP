@@ -27,6 +27,10 @@ Las entregas físicas se vinculan a una sola salida de tesorería para descontar
 
 ## Nombres de roles
 
+En **Usuarios → Eliminar registros**, el Dueño puede revisar y eliminar los registros operativos de un Administrador sin eliminar su cuenta. La revisión muestra cantidades y cambios de stock; exige escribir el correo de la cuenta y comprobar nuevamente que los registros no hayan cambiado. El borrado es transaccional: revierte unidades vendidas y perdidas, retira unidades de entradas, elimina gastos, movimientos de caja, entregas, aperturas, cuenta corriente, pagos, enlaces internos de reportes y trazabilidad de ese administrador. Los saldos se recalculan a partir de los registros restantes.
+
+Se bloquea si el stock resultante sería negativo, hay pagos o entregas vinculados a otros usuarios o reportes pendientes. Los registros de otras cuentas se conservan. Los archivos ya creados en Google Sheets se gestionan desde Google Drive. El Dueño deja una constancia del borrado en Trazabilidad. Las operaciones del sistema comparten un bloqueo transaccional para que una entrega, venta o entrada simultánea no cambie los registros durante el borrado.
+
 Los datos de ganancias, inversión, costos de compra y márgenes son privados del Dueño. Las respuestas de reportes y la entrada a la exportación de Google Sheets usan una lista explícita de datos operativos para administradores, evitando transmitir campos de rentabilidad incluso si se añaden posteriormente al cálculo interno. Los saldos de caja se mantienen como datos operativos y no representan ganancias.
 
 El rol **Dueño** tiene todos los privilegios. El resto de cuentas tienen el rol **Administrador** y conservan los permisos operativos anteriores. Los identificadores almacenados `ADMIN` (Dueño) y `SELLER` (Administrador) se conservan para mantener compatibles las cuentas existentes, sin alterar correos, contraseñas o sesiones. La aplicación muestra los nombres «Dueño» y «Administrador».
