@@ -59,7 +59,7 @@ test("El reporte de Google conserva números, soles, fechas y textos sin ejecuta
   assert.ok(payload.properties.title.includes("2026-10-26"));
   const rows = payload.sheets[0].data[0].rowData as any[];
   const excel = rows.find(
-    (r) => r.values[0]?.userEnteredValue.stringValue === "Caja según ejemplo",
+    (r) => r.values[0]?.userEnteredValue.stringValue === "Total de caja",
   );
   assert.equal(excel.values[1].userEnteredValue.numberValue, 7792);
   const product = payload.sheets[1].data[0].rowData[4] as any;

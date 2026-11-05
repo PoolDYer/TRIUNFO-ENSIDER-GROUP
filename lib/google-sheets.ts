@@ -108,24 +108,30 @@ function tab(
 }
 export function spreadsheetPayload(summary: Summary) {
   const t = summary.totals;
+  const isWeek = summary.period === "week";
   const labels: [string, number][] = [
-    ["Facturación", t.billing],
+    [isWeek ? "Facturación semanal" : "Subtotal facturación", t.billing],
     ["Ingresos en efectivo", t.cashReceipts],
-    ["Yape / transferencias", t.digital],
-    ["Gastos operativos", t.operating],
-    ["Gastos fijos", t.fixed],
+    [isWeek ? "Total de Yape semanal" : "Total de Yape", t.digital],
+    [
+      isWeek
+        ? "Total de gastos operativos diarios"
+        : "Total de gastos operativos",
+      t.operating,
+    ],
     ["Deudas históricas", t.debt],
     ["Pérdida de productos (valor de venta)", t.productLossAmount],
-    ["Caja según ejemplo", t.excelCash],
-    ["Caja neta después de gastos fijos y deudas", t.netCash],
-    ["Aperturas registradas", t.opening],
+    ["Total de caja", t.excelCash],
+    ["Total de gastos fijos", t.fixed],
+    ["Caja neta (después de gastos fijos y deudas)", t.netCash],
+    ["Aperturas de caja registradas", t.opening],
     ["Depositado", t.deposits],
     ["Entregado", t.deliveries],
-    ["Disponible calculado", t.available],
-    ["Ingresos de cuenta corriente", t.bankIncome],
-    ["Retiros de cuenta corriente", t.bankWithdrawals],
-    ["Neto de cuenta corriente del período", t.bankNet],
-    ["Acumulado de cuenta corriente", t.bankAccumulated],
+    ["Disponible en caja (físico calculado)", t.available],
+    ["Monto cuenta corriente", t.bankIncome],
+    ["Monto de retiro / disposición", t.bankWithdrawals],
+    ["Total semanal de cuenta corriente", t.bankNet],
+    ["Total acumulado de cuenta corriente", t.bankAccumulated],
   ];
   const period =
     { day: "Diario", week: "Semanal", month: "Mensual" }[summary.period] ??
@@ -133,13 +139,13 @@ export function spreadsheetPayload(summary: Summary) {
   return {
     properties: {
       title: `Triunfo Ensider · ${period} · ${summary.start} al ${summary.end}`,
-      locale: "es_PE",
+      locale: "es",
       timeZone: "America/Lima",
     },
     sheets: [
       tab(
         0,
-        "Resumen financiero",
+        isWeek ? "Control financiero semanal" : "Control financiero",
         ["Concepto", "Monto en soles"],
         labels.map(([l, v]) => [l, v / 100]),
         [1],
@@ -148,14 +154,14 @@ export function spreadsheetPayload(summary: Summary) {
       ),
       tab(
         1,
-        "Productos vendidos",
+        isWeek ? "Total de productos vendidos" : "Productos vendidos",
         [
           "Código",
-          "Producto",
-          "Stock actual",
-          "Cantidad vendida",
+          "Detalle de productos",
+          "Stock",
+          isWeek ? "Total de productos vendidos semanalmente" : "Productos vendidos",
           "Precio unitario",
-          "Facturación",
+          isWeek ? "Facturación semanal" : "Facturación",
         ],
         summary.items.map((i) => [
           i.code,
@@ -172,7 +178,7 @@ export function spreadsheetPayload(summary: Summary) {
       tab(
         2,
         "Ventas por día",
-        ["Fecha", "Facturación", "Yape / transferencias"],
+        ["Fecha", "Subtotal facturación", "Total de Yape"],
         summary.daily.map((i) => [
           i.date,
           Number(i.total) / 100,
