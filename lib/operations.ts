@@ -128,7 +128,6 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
       throw new AppError("Tipo de movimiento inválido.");
     if(action === "treasury" && p.kind === "DELIVERY")
       throw new AppError("Registra las entregas al dueño desde Movimientos de la caja para validar el efectivo y Yape disponibles.",409);
-    if (action === "bank" && p.kind === "INCOME") admin(u);
     const table =
       action === "expense"
         ? "expenses"

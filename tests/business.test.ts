@@ -391,26 +391,42 @@ test("Pago excesivo o pago digital sin medio no se registra", async () => {
     await f.pg.close();
   }
 });
-test("Administrador no puede editar productos, usuarios ni ingresar cuenta corriente", async () => {
+test("Administrador no puede editar productos, usuarios ni eliminar movimientos de cuenta corriente", async () => {
   const f = await fixture();
   try {
     const u = { ...f.user, role: "SELLER" } as User;
     await assert.rejects(f.run("product", {}, u), /dueño/);
     await assert.rejects(f.run("user", {}, u), /dueño/);
     await assert.rejects(
-      f.run(
-        "bank",
-        {
-          id: randomUUID(),
-          date: "2026-10-30",
-          kind: "INCOME",
-          detail: "Cuenta",
-          amount: 200,
-        },
-        u,
-      ),
+      f.run("bankDelete", { id: randomUUID() }, u),
       /dueño/,
     );
+  } finally {
+    await f.pg.close();
+  }
+});
+
+test("Dueño y administradores registran ingresos y retiros con responsable y saldo correcto", async () => {
+  const f = await fixture();
+  try {
+    const administrator = { ...f.user, id: randomUUID(), role: "SELLER" } as User;
+    await f.c.query(
+      "INSERT INTO users(id,name,email,password_hash,role) VALUES($1,'Administrador','cuenta@triunfoensidergroup','unused','SELLER')",
+      [administrator.id],
+    );
+    for (const user of [f.user, administrator]) {
+      for (const [kind, amount] of [["INCOME", 200.50], ["WITHDRAWAL", 50.25]] as const) {
+        const id = randomUUID();
+        await f.run("bank", { id, date: "2026-10-30", kind, detail: "Movimiento de cuenta", amount }, user);
+        const row = (await f.c.query("SELECT user_id,kind,amount FROM bank_movements WHERE id=$1", [id])).rows[0];
+        assert.deepEqual(row, { user_id: user.id, kind, amount: Math.round(amount * 100) });
+        assert.equal((await f.c.query("SELECT user_id FROM audit_log WHERE entity_id=$1", [id])).rows[0].user_id, user.id);
+      }
+    }
+    const totals = (await report(f.c, "2026-10-30", "2026-10-30", "day")).totals;
+    assert.equal(totals.bankIncome, 40100);
+    assert.equal(totals.bankWithdrawals, 10050);
+    assert.equal(totals.bankAccumulated, 30050);
   } finally {
     await f.pg.close();
   }

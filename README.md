@@ -14,7 +14,7 @@ En Lista de productos, el Dueño dispone de «Modificar stock» para corregir la
 - Descuento de stock atómico con bloqueo de filas. Reversión completa si falta stock. Identificadores únicos impiden aplicar dos veces la misma venta por reintento.
 - Entradas con proveedor, cantidad, fecha, costo del pedido, modalidad contado/crédito, monto pagado y saldo.
 - Gastos operativos y fijos con descripción, fecha, monto y usuario. Apertura física de caja única por fecha. Deudas manuales, depósitos y efectivo entregado.
-- Cuenta corriente con ingresos manuales exclusivos del dueño, retiros con motivo, consolidación semanal y acumulado histórico.
+- Cuenta corriente compartida entre Dueño y administradores: consulta, ingresos manuales y retiros con motivo, consolidación semanal y acumulado histórico. La eliminación de movimientos sigue reservada al Dueño.
 - Inventarios y reportes diarios, semanales y mensuales, cantidades vendidas por producto y precio histórico, ingresos, egresos y caja. Generación de enlaces a reportes en Google Sheets e impresión.
 - Lista de productos, Financiamiento, Ganancias del día, Control de entrada y Usuarios son exclusivos del Dueño. Los administradores conservan los apartados operativos restantes y el selector de productos necesario para vender, sin acceso al catálogo completo ni a entradas y pagos de financiamiento. Las restricciones se verifican en el menú y en las API; los datos de entradas tampoco se adjuntan a las respuestas compartidas de los administradores.
 - Auditoría de las operaciones y conservación de las entradas/ventas del Excel original como referencia.

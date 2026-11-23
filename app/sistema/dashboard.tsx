@@ -1031,7 +1031,7 @@ export default function Dashboard({ user }: { user: User }) {
                       label="Monto cuenta corriente"
                       value={money(t.bankIncome)}
                       icon={ArrowDownLeft}
-                      note="Ingresados por el dueño"
+                      note="Ingresos registrados por el equipo"
                     />
                     <Stat
                       label="Monto de retiro / disposición"
@@ -1057,8 +1057,7 @@ export default function Dashboard({ user }: { user: User }) {
                         </p>
                       </div>
                       <div className="heading-actions">
-                        {admin && (
-                          <button
+                        <button
                             className="button orange"
                             onClick={() =>
                               setModal({
@@ -1069,7 +1068,6 @@ export default function Dashboard({ user }: { user: User }) {
                           >
                             <Plus size={16} /> Ingreso
                           </button>
-                        )}
                         <button
                           className="button secondary"
                           onClick={() =>
