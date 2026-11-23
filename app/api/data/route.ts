@@ -72,7 +72,10 @@ export async function GET(req: Request) {
         {
           audit: (
             await db.query(
-              "SELECT a.*,u.name FROM audit_log a JOIN users u ON u.id=a.user_id ORDER BY a.created_at DESC LIMIT 200",
+              `SELECT a.*,u.name,CASE WHEN a.action='productStock' THEN
+                (SELECT s.code || ' · Stock: ' || s.previous_stock || ' → ' || s.new_stock || ' · ' || s.reason FROM stock_adjustments s WHERE s.id::text=a.entity_id)
+                ELSE NULL END AS detail
+                FROM audit_log a JOIN users u ON u.id=a.user_id ORDER BY a.created_at DESC LIMIT 200`,
             )
           ).rows,
           reference: (

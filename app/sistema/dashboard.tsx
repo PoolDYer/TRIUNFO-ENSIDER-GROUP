@@ -30,6 +30,7 @@ import {
 import type { User } from "@/lib/auth";
 import { roleLabels, canAccessSection } from "@/lib/roles";
 import GoogleSheetsExport from "./google-sheets-export";
+import StockAdjustment from "./stock-adjustment";
 import Financing from "./financing";
 import ReceiptFields from "./receipt-fields";
 import FinancialGroups from "./financial-groups";
@@ -102,6 +103,7 @@ const actionLabel: Record<string, string> = {
   opening: "Apertura de caja",
   openingDelete: "Apertura de caja eliminada",
   product: "Producto guardado",
+  productStock: "Stock ajustado",
   productStatus: "Estado de producto",
   productDelete: "Producto eliminado",
   user: "Usuario creado",
@@ -261,6 +263,7 @@ function MoneyField({
 }
 export default function Dashboard({ user }: { user: User }) {
   const router = useRouter();
+  const [stockProduct,setStockProduct]=useState<Product|null>(null);
   const [cashMovementsOpen,setCashMovementsOpen]=useState(false);
   const [recordsUser,setRecordsUser]=useState<{id:string;name:string;email:string}|null>(null);
   const [view, setView] = useState("overview"),
@@ -1360,6 +1363,7 @@ export default function Dashboard({ user }: { user: User }) {
                             >
                               Editar
                             </button>
+                            <button className="text-button" onClick={()=>setStockProduct(p)}>Modificar stock</button>
                             <button
                               className="text-button"
                               onClick={() =>
@@ -1514,7 +1518,7 @@ export default function Dashboard({ user }: { user: User }) {
                             </td>
                             <td>{r.name}</td>
                             <td>{actionLabel[r.action] ?? r.action}</td>
-                            <td className="muted">{r.entity_id}</td>
+                            <td className="muted">{r.detail || r.entity_id}</td>
                           </tr>
                         ))}
                       </Table>
@@ -1572,6 +1576,7 @@ export default function Dashboard({ user }: { user: User }) {
         </main>
       </div>
       {admin&&recordsUser&&<UserRecordsDelete user={recordsUser} onClose={()=>setRecordsUser(null)} onSaved={()=>{setRecordsUser(null);setRefresh(value=>value+1);setNotice("Los registros del administrador fueron eliminados y los saldos se recalcularon.");}}/>}
+      {admin&&stockProduct&&<StockAdjustment product={stockProduct} onClose={()=>setStockProduct(null)} onSaved={()=>{setStockProduct(null);setRefresh(value=>value+1);setNotice("Stock actualizado y registrado en Trazabilidad.");}}/>}
       {modal && (
         <OperationModal
           modal={modal}
@@ -2212,7 +2217,7 @@ function OperationModal({
                   />
                 ) : (
                   <p className="info-message">
-                    El stock se modifica al registrar ventas o entradas. No
+                    Usa «Modificar stock» en la lista para corregir la cantidad. No
                     cambia al editar precios.
                   </p>
                 )}

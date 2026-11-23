@@ -138,4 +138,13 @@ CREATE TABLE IF NOT EXISTS cash_handoffs (
  CHECK((cash_amount = 0 AND treasury_id IS NULL) OR (cash_amount > 0 AND treasury_id IS NOT NULL))
 );
 CREATE INDEX IF NOT EXISTS cash_handoffs_date_idx ON cash_handoffs(date,created_at DESC);
+CREATE TABLE IF NOT EXISTS stock_adjustments (
+ id uuid PRIMARY KEY, product_id uuid REFERENCES products(id) ON DELETE SET NULL,
+ code text NOT NULL, name text NOT NULL,
+ previous_stock integer NOT NULL CHECK(previous_stock >= 0),
+ new_stock integer NOT NULL CHECK(new_stock BETWEEN 0 AND 1000000),
+ reason text NOT NULL, user_id uuid NOT NULL REFERENCES users(id),
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS stock_adjustments_product_idx ON stock_adjustments(product_id,created_at DESC);
 `;

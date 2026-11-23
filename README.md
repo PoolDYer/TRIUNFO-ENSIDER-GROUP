@@ -4,6 +4,8 @@ Sistema web administrativo de inventario, ventas y caja, preparado para Vercel c
 
 ## Funciones implementadas
 
+En Lista de productos, el Dueño dispone de «Modificar stock» para corregir la cantidad total existente. Admite cero, exige motivo, comprueba que el stock no haya cambiado desde la apertura del formulario y registra cantidad anterior, cantidad nueva, responsable y fecha en Trazabilidad. El ajuste actualiza las alertas de stock y los cálculos del inventario; no genera ventas, entradas, caja ni altera costos históricos. Los administradores no pueden ejecutar esta operación.
+
 - Presentación de la comercializadora y acceso al sistema con el logo original.
 - Un dueño y tres administradores iniciales. El dueño puede crear administradores hasta un máximo de diez cuentas, desactivar cuentas, restablecer contraseñas y eliminar administradores con confirmación. La eliminación cierra sus sesiones, libera el cupo y conserva el historial de sus operaciones. No se permite eliminar al dueño.
 - Correos internos con el formato exacto `usuario@triunfoensidergroup`. No necesitan buzón ni DNS; son identificadores internos.

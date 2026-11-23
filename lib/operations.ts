@@ -18,6 +18,7 @@ import { registerSale } from "./register-sale";
 import { syncStockNotifications } from "./stock-notifications";
 import {lockCashMovements,registerCashHandoff} from "./cash-handoffs";
 import {deleteUserRecords} from "./user-records";
+import {adjustStock} from "./stock-adjustments";
 const detail = z.string().trim().min(1).max(500);
 const id = z.string().uuid();
 const base = { id, date: dateSchema };
@@ -26,11 +27,15 @@ function admin(u: User) {
     throw new AppError("Solo el dueño tiene acceso.", 403);
 }
 export async function operate(c: DB, u: User, action: string, input: unknown) {
-  if (["receiptOrder", "receipt", "financingPayment", "userRecordsDelete"].includes(action)) admin(u);
+  if (["receiptOrder", "receipt", "financingPayment", "userRecordsDelete", "productStock"].includes(action)) admin(u);
   // El borrado de un administrador debe ser atómico frente a cualquier operación.
   await lockCashMovements(c);
   let entity = "";
-  if(action === "userRecordsDelete") {
+  if(action === "productStock") {
+    const result=await adjustStock(c,u,input);
+    if(!result.created)return {ok:true,id:result.id};
+    entity=result.id;
+  } else if(action === "userRecordsDelete") {
     entity=await deleteUserRecords(c,input);
   } else if(action === "cashHandoff") {
     const handoff=await registerCashHandoff(c,u,input);
@@ -305,6 +310,7 @@ export async function operate(c: DB, u: User, action: string, input: unknown) {
   } else if (action === "resetAllData") {
     admin(u);
     z.object({ confirm: z.literal(true) }).parse(input);
+    await c.query("DELETE FROM stock_adjustments");
     await c.query("DELETE FROM cash_handoffs");
     await c.query("DELETE FROM financing_payments");
     await c.query("DELETE FROM sale_items");
